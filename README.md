@@ -1,0 +1,3 @@
+# Dokolator
+
+Doppelkopf-Statistik-App
