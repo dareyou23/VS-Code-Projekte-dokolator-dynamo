@@ -1,0 +1,24 @@
+{
+  "name": "dokolator-dynamo",
+  "version": "1.0.0",
+  "description": "DynamoDB backend for Doppelkopf game statistics",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "sam build && sam deploy",
+    "deploy:guided": "sam build && sam deploy --guided",
+    "test:create": "npm run build && sam local invoke CreateGameFunction -e test-events/create-game.json",
+    "test:list": "npm run build && sam local invoke ListGamesFunction -e test-events/list-games.json",
+    "test:stats": "npm run build && sam local invoke GetStatsFunction -e test-events/get-stats.json"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.600.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.140",
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  }
+}

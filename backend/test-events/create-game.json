@@ -1,0 +1,7 @@
+{
+  "body": "{\"players\":[{\"name\":\"Alice\",\"score\":0},{\"name\":\"Bob\",\"score\":0},{\"name\":\"Charlie\",\"score\":0},{\"name\":\"Diana\",\"score\":0}],\"rounds\":[{\"roundNumber\":1,\"winner\":[\"Alice\",\"Bob\"],\"points\":2},{\"roundNumber\":2,\"winner\":[\"Charlie\",\"Diana\"],\"points\":2,\"soloPlayer\":\"Charlie\",\"soloType\":\"Herz-Solo\"}],\"finalScores\":{\"Alice\":2,\"Bob\":2,\"Charlie\":4,\"Diana\":4}}",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}

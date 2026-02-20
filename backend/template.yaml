@@ -1,0 +1,280 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Dokolator DynamoDB Backend mit API Gateway
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs20.x
+    MemorySize: 128
+    Environment:
+      Variables:
+        GAMES_TABLE: !Ref GamesTable
+        USER_POOL_ID: !Ref UserPool
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization,x-user-id'"
+      AllowOrigin: "'*'"
+
+Resources:
+  # Cognito User Pool für Telefonnummer-Authentifizierung
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: DokolatorUsers
+      UsernameAttributes:
+        - phone_number
+      AutoVerifiedAttributes:
+        - phone_number
+      MfaConfiguration: 'OFF'
+      SmsConfiguration:
+        SnsCallerArn: !GetAtt CognitoSNSRole.Arn
+      Schema:
+        - Name: phone_number
+          AttributeDataType: String
+          Required: true
+          Mutable: false
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: false
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+
+  # IAM Role für Cognito SMS
+  CognitoSNSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cognito-idp.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+
+  # Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: DokolatorWebClient
+      UserPoolId: !Ref UserPool
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: false
+
+  # Lambda: Sign Up
+  SignUpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/auth.signUp
+      Environment:
+        Variables:
+          CLIENT_ID: !Ref UserPoolClient
+      Events:
+        SignUp:
+          Type: Api
+          Properties:
+            Path: /auth/signup
+            Method: post
+
+  # Lambda: Confirm Sign Up
+  ConfirmSignUpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/auth.confirmSignUp
+      Environment:
+        Variables:
+          CLIENT_ID: !Ref UserPoolClient
+      Events:
+        ConfirmSignUp:
+          Type: Api
+          Properties:
+            Path: /auth/confirm
+            Method: post
+
+  # Lambda: Sign In
+  SignInFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/auth.signIn
+      Environment:
+        Variables:
+          CLIENT_ID: !Ref UserPoolClient
+      Events:
+        SignIn:
+          Type: Api
+          Properties:
+            Path: /auth/signin
+            Method: post
+
+  # DynamoDB Tabelle (Single Table Design)
+  GamesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: DokolatorGames
+      BillingMode: PROVISIONED
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+  # Lambda: Spieltag erstellen
+  CreateSpieltagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/spieltag.createSpieltag
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        CreateSpieltag:
+          Type: Api
+          Properties:
+            Path: /spieltage
+            Method: post
+
+  # Lambda: Alle Spieltage abrufen
+  ListSpieltageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/spieltag.listSpieltage
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        ListSpieltage:
+          Type: Api
+          Properties:
+            Path: /spieltage
+            Method: get
+
+  # Lambda: Einzelnen Spieltag abrufen
+  GetSpieltagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/spieltag.getSpieltag
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        GetSpieltag:
+          Type: Api
+          Properties:
+            Path: /spieltage/{spieltagId}
+            Method: get
+
+  # Lambda: Spieltag abschließen
+  CompleteSpieltagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/spieltag.completeSpieltag
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        CompleteSpieltag:
+          Type: Api
+          Properties:
+            Path: /spieltage/{spieltagId}/complete
+            Method: put
+
+  # Lambda: Spiel hinzufügen
+  AddGameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/game.addGame
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        AddGame:
+          Type: Api
+          Properties:
+            Path: /spieltage/{spieltagId}/games
+            Method: post
+
+  # Lambda: Spiele eines Spieltags abrufen
+  ListGamesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/game.listGames
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        ListGames:
+          Type: Api
+          Properties:
+            Path: /spieltage/{spieltagId}/games
+            Method: get
+
+  # Lambda: Gesamt-Statistiken
+  GetStatsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/stats.getStats
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        GetStats:
+          Type: Api
+          Properties:
+            Path: /stats
+            Method: get
+
+  # Lambda: Spieltag-Statistiken
+  GetSpieltagStatsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/stats.getSpieltagStats
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        GetSpieltagStats:
+          Type: Api
+          Properties:
+            Path: /spieltage/{spieltagId}/stats
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  UserPoolId:
+    Description: "Cognito User Pool ID"
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: "Cognito User Pool Client ID"
+    Value: !Ref UserPoolClient
+  GamesTableName:
+    Description: "DynamoDB Tabelle"
+    Value: !Ref GamesTable
