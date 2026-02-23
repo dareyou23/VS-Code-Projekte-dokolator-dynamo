@@ -274,20 +274,21 @@ export default function Home() {
       }
       
       try {
-        // Zeile 1: Suche speichern
-        await api.addGame(currentSpieltag.spieltagId, {
+        // Zeile 1: Suche speichern (neue gameNumber wird automatisch vergeben)
+        const searchResult = await api.addGame(currentSpieltag.spieltagId, {
           gameValue: 1,
           bockTrigger: false,
           players: playersSearch,
           hochzeitPhase: 'suche' // Marker für Hochzeit-Suche
         });
         
-        // Zeile 2: Spiel speichern
+        // Zeile 2: Spiel speichern (GLEICHE gameNumber wie Zeile 1!)
         await api.addGame(currentSpieltag.spieltagId, {
           gameValue,
           bockTrigger: false,
           players: playersGame,
-          hochzeitPhase: rePlayers.length === 1 ? 'mit_partner' : 'solo' // Marker für Hochzeit-Spiel
+          hochzeitPhase: rePlayers.length === 1 ? 'mit_partner' : 'solo', // Marker für Hochzeit-Spiel
+          gameNumber: searchResult.gameNumber // WICHTIG: Gleiche Nummer!
         });
 
         const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
@@ -623,9 +624,14 @@ export default function Home() {
                         });
                         
                         return (
-                          <tr key={game.gameId || game.gameNumber}>
+                          <tr key={game.gameId || `${game.gameNumber}-${gameIndex}`}>
                             <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameNumber}</td>
-                            <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameValue}</td>
+                            <td style={{ border: '1px solid #ddd', padding: '10px' }}>
+                              {game.gameValue}
+                              {game.hochzeitPhase === 'suche' && ' (H Suche)'}
+                              {game.hochzeitPhase === 'mit_partner' && ' (H m.P.)'}
+                              {game.hochzeitPhase === 'solo' && ' (H Solo)'}
+                            </td>
                             {playerNames.filter(n => n.trim()).map(name => {
                               const cumulative = cumulativeScores[name] || 0;
                               const playerData = game.players[name];

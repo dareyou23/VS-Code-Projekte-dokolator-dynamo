@@ -13,9 +13,10 @@ export interface GameData {
   players: { [key: string]: GamePlayer };
   date: string;
   // Hochzeit-Flags
-  isHochzeitPhase1?: boolean;
-  isHochzeitPhase2?: boolean;
-  hasPartner?: boolean;
+  hochzeitPhase?: 'suche' | 'mit_partner' | 'solo';
+  isHochzeitPhase1?: boolean;  // DEPRECATED
+  isHochzeitPhase2?: boolean;  // DEPRECATED
+  hasPartner?: boolean;        // DEPRECATED
   // Für Anzeige
   displayValue?: string;  // z.B. "1 (H Suche)", "5 (H m.P.)"
 }

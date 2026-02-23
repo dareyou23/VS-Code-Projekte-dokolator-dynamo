@@ -18,9 +18,10 @@ export interface Game {
   createdAt: string;
   updatedAt: string;
   // Hochzeit-spezifische Felder
-  isHochzeitPhase1?: boolean;    // Phase 1: Suche (Wert 1)
-  isHochzeitPhase2?: boolean;    // Phase 2: Eigentliches Spiel
-  hasPartner?: boolean;          // Phase 2: Mit Partner (true) oder Solo (false)
+  hochzeitPhase?: 'suche' | 'mit_partner' | 'solo';  // Hochzeit-Phase
+  isHochzeitPhase1?: boolean;    // Phase 1: Suche (Wert 1) - DEPRECATED
+  isHochzeitPhase2?: boolean;    // Phase 2: Eigentliches Spiel - DEPRECATED
+  hasPartner?: boolean;          // Phase 2: Mit Partner (true) oder Solo (false) - DEPRECATED
 }
 
 export interface Spieltag {

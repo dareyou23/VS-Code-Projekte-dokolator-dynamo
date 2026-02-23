@@ -90,17 +90,30 @@ export const addGame = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Anzahl der Spiele im Spieltag ermitteln (für gameNumber)
-    const existingGames = await docClient.send(new QueryCommand({
-      TableName: TABLE_NAME,
-      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-      ExpressionAttributeValues: {
-        ':pk': `SPIELTAG#${spieltagId}`,
-        ':sk': 'GAME#'
-      },
-      Select: 'COUNT'
-    }));
-
-    const gameNumber = (existingGames.Count || 0) + 1;
+    // ABER: Wenn gameNumber im Body übergeben wird (z.B. für Hochzeit), verwenden wir diese
+    let gameNumber: number;
+    
+    if (body.gameNumber && typeof body.gameNumber === 'number') {
+      // Manuelle gameNumber (z.B. für Hochzeit-Zeile 2)
+      gameNumber = body.gameNumber;
+    } else {
+      // Automatische gameNumber: Höchste vorhandene gameNumber + 1
+      const existingGames = await docClient.send(new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': `SPIELTAG#${spieltagId}`,
+          ':sk': 'GAME#'
+        }
+      }));
+      
+      // Höchste gameNumber finden
+      const maxGameNumber = (existingGames.Items || []).reduce((max, item) => {
+        return Math.max(max, item.gameNumber || 0);
+      }, 0);
+      
+      gameNumber = maxGameNumber + 1;
+    }
 
     // Game-Objekt erstellen (EXAKT wie Frontend-Datenmodell)
     const game: Game = {
@@ -110,6 +123,7 @@ export const addGame = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       gameValue: body.gameValue,
       bockTrigger: body.bockTrigger || false,
       players: body.players, // DIREKT übernehmen, KEINE Transformation!
+      hochzeitPhase: body.hochzeitPhase, // Optional: 'suche', 'mit_partner', 'solo'
       date: new Date().toISOString(),
       timestamp: Date.now(),
       createdAt: new Date().toISOString(),
