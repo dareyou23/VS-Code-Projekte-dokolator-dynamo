@@ -717,8 +717,11 @@ export default function Home() {
                           // Anzahl Spieler für dieses Spiel (4 oder 5)
                           const playerCountForGame = Object.keys(g.players).length;
                           
-                          // Bock-State aktualisieren
-                          if (isBockRound) {
+                          // WICHTIG: Hochzeit-Suche zählt NICHT als Bockrunde!
+                          const isHochzeitSuche = g.hochzeitPhase === 'suche';
+                          
+                          // Bock-State aktualisieren (nur wenn NICHT Hochzeit-Suche)
+                          if (isBockRound && !isHochzeitSuche) {
                             bockStateForGame.active--;
                             bockStateForGame.playedInStreak++;
                           }
@@ -748,7 +751,10 @@ export default function Home() {
                           const isBockRound = tempState.active > 0;
                           const playerCountForGame = Object.keys(g.players).length;
                           
-                          if (isBockRound) {
+                          // WICHTIG: Hochzeit-Suche zählt NICHT als Bockrunde!
+                          const isHochzeitSuche = g.hochzeitPhase === 'suche';
+                          
+                          if (isBockRound && !isHochzeitSuche) {
                             tempState.active--;
                             tempState.playedInStreak++;
                           }
