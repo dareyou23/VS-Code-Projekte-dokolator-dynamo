@@ -62,6 +62,7 @@ export function getActivePlayers(
 
 /**
  * Aktualisiert Bock-State nach einem Spiel
+ * @param activePlayersCount - Anzahl der Spieler (4 oder 5), NICHT activePlayers!
  */
 export function updateBockState(
   currentBockActive: number,

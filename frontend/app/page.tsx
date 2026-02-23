@@ -324,7 +324,7 @@ export default function Home() {
           bockTotalInStreak,
           isBockRound,
           bockTrigger,
-          activePlayers.length
+          playerCount // Anzahl Spieler (4 oder 5), nicht activePlayers!
         );
         
         setBockActive(newBockState.bockActive);
@@ -397,7 +397,7 @@ export default function Home() {
         bockTotalInStreak,
         isBockRound,
         bockTrigger,
-        activePlayers.length
+        playerCount // Anzahl Spieler (4 oder 5), nicht activePlayers!
       );
       
       setBockActive(newBockState.bockActive);
