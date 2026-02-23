@@ -150,6 +150,7 @@ export default function Home() {
     let geberName: string | null = null;
     const rePlayers: string[] = [];
     const soloPlayers: string[] = [];
+    const hochzeitPlayers: string[] = [];
     
     for (let i = 0; i < playerCount; i++) {
       const name = playerNames[i].trim();
@@ -163,6 +164,9 @@ export default function Home() {
       }
       if (role === 'solo' || role === 'geber+solo') {
         soloPlayers.push(name);
+      }
+      if (role === 'hochzeit' || role === 'geber+hochzeit') {
+        hochzeitPlayers.push(name);
       }
     }
 
@@ -179,6 +183,8 @@ export default function Home() {
     let gameType = 'normal';
     if (soloPlayers.length > 0) {
       gameType = 'solo';
+    } else if (hochzeitPlayers.length > 0) {
+      gameType = 'hochzeit';
     }
     
     let scores: Record<string, number> = {};
@@ -189,8 +195,8 @@ export default function Home() {
         alert('Solo: Genau 1 Solo-Spieler.');
         return;
       }
-      if (rePlayers.length > 0) {
-        alert('Solo: Keine Re-Spieler.');
+      if (rePlayers.length > 0 || hochzeitPlayers.length > 0) {
+        alert('Solo: Keine Re/Hochzeit-Spieler.');
         return;
       }
       if (!activePlayers.includes(soloPlayers[0])) {
@@ -200,6 +206,109 @@ export default function Home() {
       
       // Solo-Punkte berechnen
       scores = calculateSoloScores(soloPlayers[0], activePlayers, gameValue);
+    } else if (gameType === 'hochzeit') {
+      // Hochzeit-Validierung (aus Referenz, Zeile 587-596)
+      if (hochzeitPlayers.length !== 1) {
+        alert('Hochzeit: Genau 1 Hochzeit-Spieler.');
+        return;
+      }
+      if (rePlayers.length > 1) {
+        alert('Hochzeit: Max. 1 Re-Partner.');
+        return;
+      }
+      if (rePlayers.length === 1 && hochzeitPlayers[0] === rePlayers[0]) {
+        alert('Hochzeit: Spieler kann nicht eigener Partner sein.');
+        return;
+      }
+      if (!activePlayers.includes(hochzeitPlayers[0])) {
+        alert('Hochzeit-Spieler muss aktiv sein (kann bei 5 Spielern nicht der Geber sein).');
+        return;
+      }
+      if (rePlayers.length === 1 && !activePlayers.includes(rePlayers[0])) {
+        alert('Hochzeit-Partner muss aktiv sein (kann bei 5 Spielern nicht der Geber sein).');
+        return;
+      }
+      
+      // Hochzeit: ZWEI ZEILEN mit GLEICHER Spielnummer
+      // Zeile 1: Suche (fester Wert 1, Solo-Berechnung)
+      const searchScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, 1);
+      
+      // Zeile 2: Spiel (User-Wert, Re/Kontra oder Solo)
+      let gameScores: Record<string, number> = {};
+      if (rePlayers.length === 1) {
+        // MIT Partner: Re/Kontra mit [hochzeitSpieler, partner]
+        gameScores = calculateReKontraScores([hochzeitPlayers[0], rePlayers[0]], activePlayers, gameValue);
+      } else {
+        // OHNE Partner: Solo
+        gameScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, gameValue);
+      }
+      
+      // Players-Objekt für Zeile 1 (Suche)
+      const playersSearch: { [key: string]: { roles: string[]; points: number } } = {};
+      for (let i = 0; i < playerCount; i++) {
+        const name = playerNames[i].trim();
+        if (!name) continue;
+        
+        const roles = name === hochzeitPlayers[0] ? ['hochzeit'] : (name === geberName ? ['geber'] : []);
+        const points = searchScores[name] || 0;
+        playersSearch[name] = { roles, points };
+      }
+      
+      // Players-Objekt für Zeile 2 (Spiel)
+      const playersGame: { [key: string]: { roles: string[]; points: number } } = {};
+      for (let i = 0; i < playerCount; i++) {
+        const name = playerNames[i].trim();
+        if (!name) continue;
+        
+        let roles: string[] = [];
+        if (name === hochzeitPlayers[0]) {
+          roles = ['hochzeit'];
+        } else if (rePlayers.length === 1 && name === rePlayers[0]) {
+          roles = ['re'];
+        } else if (name === geberName) {
+          roles = ['geber'];
+        }
+        
+        const points = gameScores[name] || 0;
+        playersGame[name] = { roles, points };
+      }
+      
+      try {
+        // Zeile 1: Suche speichern
+        await api.addGame(currentSpieltag.spieltagId, {
+          gameValue: 1,
+          bockTrigger: false,
+          players: playersSearch,
+          hochzeitPhase: 'suche' // Marker für Hochzeit-Suche
+        });
+        
+        // Zeile 2: Spiel speichern
+        await api.addGame(currentSpieltag.spieltagId, {
+          gameValue,
+          bockTrigger: false,
+          players: playersGame,
+          hochzeitPhase: rePlayers.length === 1 ? 'mit_partner' : 'solo' // Marker für Hochzeit-Spiel
+        });
+
+        const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
+        setGames(spieltagData.games || []);
+
+        // Geber rotieren
+        const currentDealerIndex = playerRoles.findIndex(role => role === 'geber' || role?.startsWith('geber+'));
+        const nextDealerIndex = currentDealerIndex !== -1 ? (currentDealerIndex + 1) % playerCount : 0;
+        
+        const newRoles = new Array(playerCount).fill('');
+        newRoles[nextDealerIndex] = 'geber';
+        setPlayerRoles(newRoles);
+        
+        // Spielwert zurücksetzen auf null (nicht auf '')
+        setGameValue(null);
+        setCustomGameValue('');
+      } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Speichern des Hochzeit-Spiels');
+      }
+      return; // Wichtig: Hier return, damit der normale Flow nicht weiterläuft
     } else {
       // Normal Re/Kontra: GENAU 2 Re-Spieler benötigt (aus Referenz, Zeile 598)
       if (rePlayers.length !== 2) {
@@ -291,12 +400,12 @@ export default function Home() {
     <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
       <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1200px', margin: '0 auto' }}>
         
-        <h1 style={{ color: '#0056b3', textAlign: 'center', marginBottom: '10px' }}>Dokolator - Schritt 2 Test</h1>
+        <h1 style={{ color: '#0056b3', textAlign: 'center', marginBottom: '10px' }}>Dokolator - Schritt 3 Test</h1>
         <div style={{ textAlign: 'center', fontSize: '14px', color: '#666', marginBottom: '20px' }}>
           {currentDate}
         </div>
         <div style={{ textAlign: 'center', fontSize: '12px', color: '#999', marginBottom: '20px' }}>
-          Normal Re/Kontra + Solo - Kein Bock, Keine Hochzeit
+          Normal Re/Kontra + Solo + Hochzeit - Kein Bock
         </div>
 
         <button
@@ -401,6 +510,26 @@ export default function Home() {
                             style={{ marginRight: '5px' }}
                           />
                           Re {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && <span style={{ fontSize: '11px', color: '#999' }}>(Geber sitzt aus)</span>}
+                        </label>
+                        
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                          <input
+                            type="checkbox"
+                            checked={playerRoles[i] === 'hochzeit' || playerRoles[i] === 'geber+hochzeit'}
+                            disabled={playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+'))}
+                            onChange={(e) => {
+                              const newRoles = [...playerRoles];
+                              const isGeber = playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+');
+                              if (e.target.checked) {
+                                newRoles[i] = isGeber ? 'geber+hochzeit' : 'hochzeit';
+                              } else {
+                                newRoles[i] = isGeber ? 'geber' : '';
+                              }
+                              setPlayerRoles(newRoles);
+                            }}
+                            style={{ marginRight: '5px' }}
+                          />
+                          Hochzeit {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && <span style={{ fontSize: '11px', color: '#999' }}>(Geber sitzt aus)</span>}
                         </label>
                         
                         <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
