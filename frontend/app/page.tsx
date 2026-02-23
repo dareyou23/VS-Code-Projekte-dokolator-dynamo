@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
-import { calculateReKontraScores, getActivePlayers } from '@/lib/gameLogic';
+import { calculateReKontraScores, getActivePlayers, updateBockState } from '@/lib/gameLogic';
 import { calculateSoloScores } from '@/lib/soloLogic';
 import type { GameData, Spieltag } from '@/lib/types';
 
@@ -20,6 +20,12 @@ export default function Home() {
   const [playerRoles, setPlayerRoles] = useState<string[]>(['geber', '', '', '', '']);
   const [gameValue, setGameValue] = useState<number | null>(null);
   const [customGameValue, setCustomGameValue] = useState('');
+  const [bockTrigger, setBockTrigger] = useState(false);
+  
+  // Bock-State (wird vom Spieltag geladen)
+  const [bockActive, setBockActive] = useState(0);
+  const [bockPlayedInStreak, setBockPlayedInStreak] = useState(0);
+  const [bockTotalInStreak, setBockTotalInStreak] = useState(0);
 
   useEffect(() => {
     const date = new Date();
@@ -42,6 +48,11 @@ export default function Home() {
         setCurrentSpieltag(activeSpieltag);
         setPlayerNames(activeSpieltag.playerNames);
         setPlayerCount(activeSpieltag.playerNames.length);
+        
+        // Bock-State laden
+        setBockActive(activeSpieltag.bockRoundsActive || 0);
+        setBockPlayedInStreak(activeSpieltag.bockGamesPlayedInStreak || 0);
+        setBockTotalInStreak(activeSpieltag.totalBockGamesInStreak || 0);
         
         const spieltagData = await api.getSpieltag(activeSpieltag.spieltagId);
         setGames(spieltagData.games || []);
@@ -179,6 +190,11 @@ export default function Home() {
     // Aktive Spieler ermitteln (bei 5 Spielern sitzt Geber aus)
     const activePlayers = getActivePlayers(playerNames.filter(n => n.trim()), geberName, playerCount);
     
+    // Bock-Multiplikator (aus Referenz, Zeile 930-940)
+    const isBockRound = bockActive > 0;
+    const bockMultiplier = isBockRound ? 2 : 1;
+    const effectiveGameValue = gameValue * bockMultiplier;
+    
     // Spieltyp ermitteln
     let gameType = 'normal';
     if (soloPlayers.length > 0) {
@@ -204,8 +220,8 @@ export default function Home() {
         return;
       }
       
-      // Solo-Punkte berechnen
-      scores = calculateSoloScores(soloPlayers[0], activePlayers, gameValue);
+      // Solo-Punkte berechnen (mit Bock-Multiplikator)
+      scores = calculateSoloScores(soloPlayers[0], activePlayers, effectiveGameValue);
     } else if (gameType === 'hochzeit') {
       // Hochzeit-Validierung (aus Referenz, Zeile 587-596)
       if (hochzeitPlayers.length !== 1) {
@@ -230,17 +246,18 @@ export default function Home() {
       }
       
       // Hochzeit: ZWEI ZEILEN mit GLEICHER Spielnummer
-      // Zeile 1: Suche (fester Wert 1, Solo-Berechnung)
-      const searchScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, 1);
+      // Zeile 1: Suche (fester Wert 1, Solo-Berechnung) - MIT Bock-Multiplikator
+      const searchValue = 1 * bockMultiplier;
+      const searchScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, searchValue);
       
-      // Zeile 2: Spiel (User-Wert, Re/Kontra oder Solo)
+      // Zeile 2: Spiel (User-Wert, Re/Kontra oder Solo) - MIT Bock-Multiplikator
       let gameScores: Record<string, number> = {};
       if (rePlayers.length === 1) {
         // MIT Partner: Re/Kontra mit [hochzeitSpieler, partner]
-        gameScores = calculateReKontraScores([hochzeitPlayers[0], rePlayers[0]], activePlayers, gameValue);
+        gameScores = calculateReKontraScores([hochzeitPlayers[0], rePlayers[0]], activePlayers, effectiveGameValue);
       } else {
         // OHNE Partner: Solo
-        gameScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, gameValue);
+        gameScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, effectiveGameValue);
       }
       
       // Players-Objekt für Zeile 1 (Suche)
@@ -276,16 +293,16 @@ export default function Home() {
       try {
         // Zeile 1: Suche speichern (neue gameNumber wird automatisch vergeben)
         const searchResult = await api.addGame(currentSpieltag.spieltagId, {
-          gameValue: 1,
-          bockTrigger: false,
+          gameValue: searchValue,
+          bockTrigger: false, // Nur beim Hauptspiel (Zeile 2) triggern
           players: playersSearch,
           hochzeitPhase: 'suche' // Marker für Hochzeit-Suche
         });
         
         // Zeile 2: Spiel speichern (GLEICHE gameNumber wie Zeile 1!)
         await api.addGame(currentSpieltag.spieltagId, {
-          gameValue,
-          bockTrigger: false,
+          gameValue: effectiveGameValue,
+          bockTrigger, // Bock-Trigger beim Hauptspiel
           players: playersGame,
           hochzeitPhase: rePlayers.length === 1 ? 'mit_partner' : 'solo', // Marker für Hochzeit-Spiel
           gameNumber: searchResult.gameNumber // WICHTIG: Gleiche Nummer!
@@ -293,6 +310,20 @@ export default function Home() {
 
         const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
         setGames(spieltagData.games || []);
+
+        // Bock-State aktualisieren (aus Referenz, Zeile 940-960)
+        const newBockState = updateBockState(
+          bockActive,
+          bockPlayedInStreak,
+          bockTotalInStreak,
+          isBockRound,
+          bockTrigger,
+          activePlayers.length
+        );
+        
+        setBockActive(newBockState.bockActive);
+        setBockPlayedInStreak(newBockState.bockPlayedInStreak);
+        setBockTotalInStreak(newBockState.bockTotalInStreak);
 
         // Geber rotieren
         const currentDealerIndex = playerRoles.findIndex(role => role === 'geber' || role?.startsWith('geber+'));
@@ -302,9 +333,10 @@ export default function Home() {
         newRoles[nextDealerIndex] = 'geber';
         setPlayerRoles(newRoles);
         
-        // Spielwert zurücksetzen auf null (nicht auf '')
+        // Spielwert und Bock-Trigger zurücksetzen
         setGameValue(null);
         setCustomGameValue('');
+        setBockTrigger(false);
       } catch (error) {
         console.error('Fehler:', error);
         alert('Fehler beim Speichern des Hochzeit-Spiels');
@@ -323,8 +355,8 @@ export default function Home() {
         return;
       }
       
-      // Punkte berechnen (EXAKT aus Referenz)
-      scores = calculateReKontraScores(rePlayers, activePlayers, gameValue);
+      // Punkte berechnen (EXAKT aus Referenz) - MIT Bock-Multiplikator
+      scores = calculateReKontraScores(rePlayers, activePlayers, effectiveGameValue);
     }
     
     // Players-Objekt erstellen
@@ -345,12 +377,26 @@ export default function Home() {
     try {
       await api.addGame(currentSpieltag.spieltagId, {
         gameValue,
-        bockTrigger: false,
+        bockTrigger,
         players: playersWithPoints
       });
 
       const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
       setGames(spieltagData.games || []);
+
+      // Bock-State aktualisieren (aus Referenz, Zeile 940-960)
+      const newBockState = updateBockState(
+        bockActive,
+        bockPlayedInStreak,
+        bockTotalInStreak,
+        isBockRound,
+        bockTrigger,
+        activePlayers.length
+      );
+      
+      setBockActive(newBockState.bockActive);
+      setBockPlayedInStreak(newBockState.bockPlayedInStreak);
+      setBockTotalInStreak(newBockState.bockTotalInStreak);
 
       // Geber rotieren
       const currentDealerIndex = playerRoles.findIndex(role => role === 'geber' || role?.startsWith('geber+'));
@@ -360,7 +406,10 @@ export default function Home() {
       newRoles[nextDealerIndex] = 'geber';
       setPlayerRoles(newRoles);
       
-      // Spielwert zurücksetzen auf null (nicht auf '')
+      // Spielwert und Bock-Trigger zurücksetzen
+      setGameValue(null);
+      setCustomGameValue('');
+      setBockTrigger(false);
       setGameValue(null);
       setCustomGameValue('');
     } catch (error) {
@@ -401,12 +450,12 @@ export default function Home() {
     <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
       <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1200px', margin: '0 auto' }}>
         
-        <h1 style={{ color: '#0056b3', textAlign: 'center', marginBottom: '10px' }}>Dokolator - Schritt 3 Test</h1>
+        <h1 style={{ color: '#0056b3', textAlign: 'center', marginBottom: '10px' }}>Dokolator - Vollversion</h1>
         <div style={{ textAlign: 'center', fontSize: '14px', color: '#666', marginBottom: '20px' }}>
           {currentDate}
         </div>
         <div style={{ textAlign: 'center', fontSize: '12px', color: '#999', marginBottom: '20px' }}>
-          Normal Re/Kontra + Solo + Hochzeit - Kein Bock
+          Normal Re/Kontra + Solo + Hochzeit + Bock
         </div>
 
         <button
@@ -591,6 +640,26 @@ export default function Home() {
                       />
                     </label>
                   </div>
+                </div>
+
+                <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#fff9e6' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>Bockrunde:</h3>
+                  {bockActive > 0 && (
+                    <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#ffe6e6', borderRadius: '4px', fontWeight: 'bold', color: '#d32f2f' }}>
+                      ⚠️ Bockrunde aktiv: {bockPlayedInStreak + 1}/{bockTotalInStreak} (noch {bockActive} Spiele)
+                    </div>
+                  )}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={bockTrigger}
+                      onChange={(e) => setBockTrigger(e.target.checked)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '14px' }}>
+                      Bockrunde auslösen (fügt {playerNames.filter(n => n.trim()).length} neue Bockrunden hinzu)
+                    </span>
+                  </label>
                 </div>
 
                 <button type="submit" style={{ width: '100%', padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
