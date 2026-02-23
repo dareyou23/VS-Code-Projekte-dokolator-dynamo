@@ -117,6 +117,12 @@ export default function Home() {
       setPlayerNames(defaultPlayers);
       setPlayerRoles(['geber', '', '', '', '']);
       setPlayerCount(5);
+      
+      // Bock-State zurücksetzen
+      setBockActive(0);
+      setBockPlayedInStreak(0);
+      setBockTotalInStreak(0);
+      setBockTrigger(false);
     } catch (error) {
       console.error('Fehler:', error);
       alert('Fehler beim Erstellen des Spieltags');
@@ -649,24 +655,26 @@ export default function Home() {
                       ⚠️ Bockrunde aktiv: {bockPlayedInStreak + 1}/{bockTotalInStreak} (noch {bockActive} Spiele)
                     </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setBockTrigger(!bockTrigger)}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      backgroundColor: bockTrigger ? '#d32f2f' : '#ff9800',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '5px',
-                      fontSize: '15px',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s'
-                    }}
-                  >
-                    {bockTrigger ? '✓ Bockrunde wird ausgelöst' : 'Bockrunde auslösen'} ({playerNames.filter(n => n.trim()).length} Spiele)
-                  </button>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setBockTrigger(!bockTrigger)}
+                      style={{
+                        padding: '12px 20px',
+                        backgroundColor: bockTrigger ? '#d32f2f' : '#ff9800',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        fontSize: '15px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {bockTrigger ? '✓ Bockrunde wird ausgelöst' : 'Bockrunde auslösen'} ({playerCount} Spiele)
+                    </button>
+                  </div>
                 </div>
 
                 <button type="submit" style={{ width: '100%', padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
@@ -684,6 +692,7 @@ export default function Home() {
                       <tr style={{ backgroundColor: '#f0f0f0' }}>
                         <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Spiel #</th>
                         <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Spielwert</th>
+                        <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center' }}>Bock</th>
                         {playerNames.filter(n => n.trim()).map(name => (
                           <th key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center' }}>{name}</th>
                         ))}
@@ -699,6 +708,72 @@ export default function Home() {
                           }, 0);
                         });
                         
+                        // Bock-State für dieses Spiel berechnen
+                        let bockStateForGame = { active: 0, playedInStreak: 0, totalInStreak: 0 };
+                        for (let i = 0; i <= gameIndex; i++) {
+                          const g = games[i];
+                          const isBockRound = bockStateForGame.active > 0;
+                          
+                          // Aktive Spieler für dieses Spiel
+                          const activeCount = Object.values(g.players).filter(p => p.points !== 0).length;
+                          
+                          // Bock-State aktualisieren
+                          if (isBockRound) {
+                            bockStateForGame.active--;
+                            bockStateForGame.playedInStreak++;
+                          }
+                          
+                          if (g.bockTrigger) {
+                            if (bockStateForGame.active === 0) {
+                              bockStateForGame.playedInStreak = 0;
+                              bockStateForGame.totalInStreak = activeCount;
+                            } else {
+                              bockStateForGame.totalInStreak += activeCount;
+                            }
+                            bockStateForGame.active += activeCount;
+                          }
+                          
+                          if (bockStateForGame.active === 0 && bockStateForGame.playedInStreak >= bockStateForGame.totalInStreak && bockStateForGame.totalInStreak > 0) {
+                            bockStateForGame.playedInStreak = 0;
+                            bockStateForGame.totalInStreak = 0;
+                          }
+                        }
+                        
+                        // Bock-Anzeige für DIESES Spiel (vor dem Update)
+                        let bockDisplay = '-';
+                        // Rückwärts rechnen: War dieses Spiel eine Bockrunde?
+                        let tempState = { active: 0, playedInStreak: 0, totalInStreak: 0 };
+                        for (let i = 0; i < gameIndex; i++) {
+                          const g = games[i];
+                          const isBockRound = tempState.active > 0;
+                          const activeCount = Object.values(g.players).filter(p => p.points !== 0).length;
+                          
+                          if (isBockRound) {
+                            tempState.active--;
+                            tempState.playedInStreak++;
+                          }
+                          
+                          if (g.bockTrigger) {
+                            if (tempState.active === 0) {
+                              tempState.playedInStreak = 0;
+                              tempState.totalInStreak = activeCount;
+                            } else {
+                              tempState.totalInStreak += activeCount;
+                            }
+                            tempState.active += activeCount;
+                          }
+                          
+                          if (tempState.active === 0 && tempState.playedInStreak >= tempState.totalInStreak && tempState.totalInStreak > 0) {
+                            tempState.playedInStreak = 0;
+                            tempState.totalInStreak = 0;
+                          }
+                        }
+                        
+                        // Jetzt prüfen: Ist DAS AKTUELLE Spiel eine Bockrunde?
+                        if (tempState.active > 0 && tempState.totalInStreak > 0) {
+                          bockDisplay = `${tempState.playedInStreak + 1}/${tempState.totalInStreak}`;
+                        }
+                        
                         return (
                           <tr key={game.gameId || `${game.gameNumber}-${gameIndex}`}>
                             <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameNumber}</td>
@@ -707,6 +782,9 @@ export default function Home() {
                               {game.hochzeitPhase === 'suche' && ' (H Suche)'}
                               {game.hochzeitPhase === 'mit_partner' && ' (H m.P.)'}
                               {game.hochzeitPhase === 'solo' && ' (H Solo)'}
+                            </td>
+                            <td style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', fontWeight: bockDisplay !== '-' ? 'bold' : 'normal', color: bockDisplay !== '-' ? '#d32f2f' : '#666' }}>
+                              {bockDisplay}
                             </td>
                             {playerNames.filter(n => n.trim()).map(name => {
                               const cumulative = cumulativeScores[name] || 0;
