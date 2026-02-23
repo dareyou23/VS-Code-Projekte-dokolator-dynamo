@@ -506,17 +506,7 @@ export default function Home() {
                               let roleChar = '-';
                               let bgColor = '#fff';
                               
-                              if (roles.includes('geber') || roles.includes('geber+re') || roles.includes('geber+solo') || roles.includes('geber+hochzeit')) {
-                                // Bei 5 Spielern sitzt Geber aus
-                                if (playerCount === 5 && playerData.points === 0) {
-                                  roleChar = '⌀';
-                                  bgColor = '#f8f9fa';
-                                } else {
-                                  roleChar = 'G';
-                                  bgColor = '#fff0e6';
-                                }
-                              }
-                              
+                              // Priorität: Solo > Re > Hochzeit > Geber > Kontra
                               if (roles.includes('solo') || roles.includes('geber+solo')) {
                                 roleChar = 'S';
                                 bgColor = '#ffe6e6';
@@ -526,7 +516,16 @@ export default function Home() {
                               } else if (roles.includes('hochzeit') || roles.includes('geber+hochzeit')) {
                                 roleChar = 'H';
                                 bgColor = '#fff0e6';
-                              } else if (playerData && playerData.points !== 0 && roleChar === '-') {
+                              } else if (roles.includes('geber')) {
+                                // Bei 5 Spielern sitzt Geber aus (wenn Punkte = 0)
+                                if (playerCount === 5 && playerData.points === 0) {
+                                  roleChar = '⌀';
+                                  bgColor = '#f8f9fa';
+                                } else {
+                                  roleChar = 'G';
+                                  bgColor = '#fff0e6';
+                                }
+                              } else if (playerData && playerData.points !== 0) {
                                 // Kontra (aktiver Spieler ohne spezielle Rolle)
                                 roleChar = 'K';
                                 bgColor = '#fff0e6';
