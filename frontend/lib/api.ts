@@ -38,6 +38,15 @@ export const api = {
     return res.json();
   },
 
+  async updateGame(spieltagId: string, gameId: string, gameData: any) {
+    const res = await fetch(`${API_BASE_URL}/spieltage/${spieltagId}/games/${gameId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-user-id': USER_ID },
+      body: JSON.stringify(gameData),
+    });
+    return res.json();
+  },
+
   async getSpieltagStats(spieltagId: string) {
     const res = await fetch(`${API_BASE_URL}/spieltage/${spieltagId}/stats`, {
       headers: { 'x-user-id': USER_ID },

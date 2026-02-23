@@ -22,6 +22,9 @@ export default function Home() {
   const [customGameValue, setCustomGameValue] = useState('');
   const [bockTrigger, setBockTrigger] = useState(false);
   
+  // Edit-State
+  const [editingGameId, setEditingGameId] = useState<string | null>(null);
+  
   // Bock-State (wird vom Spieltag geladen)
   const [bockActive, setBockActive] = useState(0);
   const [bockPlayedInStreak, setBockPlayedInStreak] = useState(0);
@@ -141,6 +144,42 @@ export default function Home() {
     
     setPlayerNames(newNames.slice(0, count));
     setPlayerRoles(newRoles.slice(0, count));
+  };
+
+  const startEditGame = (game: GameData) => {
+    setEditingGameId(game.gameId || null);
+    
+    // Spieleranzahl setzen
+    const gamePlayerCount = Object.keys(game.players).length;
+    setPlayerCount(gamePlayerCount);
+    
+    // Spielernamen setzen
+    const names = Object.keys(game.players);
+    setPlayerNames(names);
+    
+    // Rollen setzen
+    const roles = names.map(name => {
+      const playerData = game.players[name];
+      return playerData.roles.join('+') || '';
+    });
+    setPlayerRoles(roles);
+    
+    // Spielwert setzen
+    setGameValue(game.gameValue);
+    setCustomGameValue('');
+    
+    // Bock-Trigger setzen
+    setBockTrigger(game.bockTrigger);
+    
+    // Zum Formular scrollen
+    document.querySelector('.input-section')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingGameId(null);
+    setGameValue(null);
+    setCustomGameValue('');
+    setBockTrigger(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -381,46 +420,69 @@ export default function Home() {
     }
 
     try {
-      await api.addGame(currentSpieltag.spieltagId, {
-        gameValue,
-        bockTrigger,
-        players: playersWithPoints
-      });
+      if (editingGameId) {
+        // UPDATE: Bestehendes Spiel aktualisieren
+        const gameToUpdate = games.find(g => g.gameId === editingGameId);
+        if (!gameToUpdate) {
+          alert('Spiel nicht gefunden');
+          return;
+        }
+        
+        await api.updateGame(currentSpieltag.spieltagId, editingGameId, {
+          gameNumber: gameToUpdate.gameNumber,
+          gameValue,
+          bockTrigger,
+          players: playersWithPoints,
+          hochzeitPhase: gameToUpdate.hochzeitPhase,
+          date: gameToUpdate.date,
+          timestamp: gameToUpdate.timestamp,
+          createdAt: gameToUpdate.date
+        });
+        
+        setEditingGameId(null);
+      } else {
+        // CREATE: Neues Spiel hinzufügen
+        await api.addGame(currentSpieltag.spieltagId, {
+          gameValue,
+          bockTrigger,
+          players: playersWithPoints
+        });
+      }
 
       const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
       setGames(spieltagData.games || []);
 
-      // Bock-State aktualisieren (aus Referenz, Zeile 940-960)
-      const newBockState = updateBockState(
-        bockActive,
-        bockPlayedInStreak,
-        bockTotalInStreak,
-        isBockRound,
-        bockTrigger,
-        playerCount // Anzahl Spieler (4 oder 5), nicht activePlayers!
-      );
-      
-      setBockActive(newBockState.bockActive);
-      setBockPlayedInStreak(newBockState.bockPlayedInStreak);
-      setBockTotalInStreak(newBockState.bockTotalInStreak);
+      if (!editingGameId) {
+        // Nur bei neuem Spiel: Bock-State aktualisieren und Geber rotieren
+        const newBockState = updateBockState(
+          bockActive,
+          bockPlayedInStreak,
+          bockTotalInStreak,
+          isBockRound,
+          bockTrigger,
+          playerCount
+        );
+        
+        setBockActive(newBockState.bockActive);
+        setBockPlayedInStreak(newBockState.bockPlayedInStreak);
+        setBockTotalInStreak(newBockState.bockTotalInStreak);
 
-      // Geber rotieren
-      const currentDealerIndex = playerRoles.findIndex(role => role === 'geber' || role?.startsWith('geber+'));
-      const nextDealerIndex = currentDealerIndex !== -1 ? (currentDealerIndex + 1) % playerCount : 0;
-      
-      const newRoles = new Array(playerCount).fill('');
-      newRoles[nextDealerIndex] = 'geber';
-      setPlayerRoles(newRoles);
+        // Geber rotieren
+        const currentDealerIndex = playerRoles.findIndex(role => role === 'geber' || role?.startsWith('geber+'));
+        const nextDealerIndex = currentDealerIndex !== -1 ? (currentDealerIndex + 1) % playerCount : 0;
+        
+        const newRoles = new Array(playerCount).fill('');
+        newRoles[nextDealerIndex] = 'geber';
+        setPlayerRoles(newRoles);
+      }
       
       // Spielwert und Bock-Trigger zurücksetzen
       setGameValue(null);
       setCustomGameValue('');
       setBockTrigger(false);
-      setGameValue(null);
-      setCustomGameValue('');
     } catch (error) {
       console.error('Fehler:', error);
-      alert('Fehler beim Speichern des Spiels');
+      alert(editingGameId ? 'Fehler beim Aktualisieren des Spiels' : 'Fehler beim Speichern des Spiels');
     }
   };
 
@@ -679,9 +741,16 @@ export default function Home() {
                   </div>
                 </div>
 
-                <button type="submit" style={{ width: '100%', padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
-                  Spielrunde erfassen
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" style={{ flex: 1, padding: '15px', backgroundColor: editingGameId ? '#ffc107' : '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
+                    {editingGameId ? 'Änderungen speichern' : 'Spielrunde erfassen'}
+                  </button>
+                  {editingGameId && (
+                    <button type="button" onClick={cancelEdit} style={{ padding: '15px 30px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
+                      Abbrechen
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
 
@@ -698,6 +767,7 @@ export default function Home() {
                         {playerNames.filter(n => n.trim()).map(name => (
                           <th key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center' }}>{name}</th>
                         ))}
+                        <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', width: '60px' }}>✍️</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -843,6 +913,24 @@ export default function Home() {
                                 </td>
                               );
                             })}
+                            <td style={{ border: '1px solid #ddd', padding: '5px', textAlign: 'center' }}>
+                              <button
+                                onClick={() => startEditGame(game)}
+                                style={{
+                                  padding: '5px 10px',
+                                  fontSize: '16px',
+                                  backgroundColor: '#ffc107',
+                                  color: '#333',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer',
+                                  transition: 'background-color 0.2s'
+                                }}
+                                title={`Spiel ${game.gameNumber} bearbeiten`}
+                              >
+                                ✍️
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}

@@ -217,6 +217,22 @@ Resources:
             Path: /spieltage/{spieltagId}/games
             Method: post
 
+  # Lambda: Spiel aktualisieren
+  UpdateGameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/game.updateGame
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        UpdateGame:
+          Type: Api
+          Properties:
+            Path: /spieltage/{spieltagId}/games/{gameId}
+            Method: put
+
   # Lambda: Spiele eines Spieltags abrufen
   ListGamesFunction:
     Type: AWS::Serverless::Function

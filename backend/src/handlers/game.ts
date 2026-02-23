@@ -212,3 +212,92 @@ export const listGames = async (event: APIGatewayProxyEvent): Promise<APIGateway
     };
   }
 };
+
+/**
+ * PUT /spieltage/{spieltagId}/games/{gameId} - Spiel aktualisieren
+ */
+export const updateGame = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  if (getHttpMethod(event) === 'OPTIONS') {
+    return handleOptions();
+  }
+  
+  try {
+    const userId = getUserIdFromEvent(event);
+    if (!userId) {
+      return {
+        statusCode: 401,
+        headers: responseHeaders,
+        body: JSON.stringify({ error: 'Unauthorized' })
+      };
+    }
+
+    const spieltagId = event.pathParameters?.spieltagId;
+    const gameId = event.pathParameters?.gameId;
+    
+    if (!spieltagId || !gameId) {
+      return {
+        statusCode: 400,
+        headers: responseHeaders,
+        body: JSON.stringify({ error: 'Missing spieltagId or gameId' })
+      };
+    }
+
+    const body = JSON.parse(event.body || '{}');
+
+    // Validierung
+    if (!body.players || typeof body.players !== 'object') {
+      return {
+        statusCode: 400,
+        headers: responseHeaders,
+        body: JSON.stringify({ error: 'Invalid players data' })
+      };
+    }
+
+    if (typeof body.gameValue !== 'number') {
+      return {
+        statusCode: 400,
+        headers: responseHeaders,
+        body: JSON.stringify({ error: 'Invalid gameValue' })
+      };
+    }
+
+    // Game-Objekt aktualisieren
+    const game: Game = {
+      gameId,
+      spieltagId,
+      gameNumber: body.gameNumber,
+      gameValue: body.gameValue,
+      bockTrigger: body.bockTrigger || false,
+      players: body.players,
+      hochzeitPhase: body.hochzeitPhase,
+      date: body.date || new Date().toISOString(),
+      timestamp: body.timestamp || Date.now(),
+      createdAt: body.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // In DynamoDB aktualisieren
+    await docClient.send(new PutCommand({
+      TableName: TABLE_NAME,
+      Item: {
+        PK: `SPIELTAG#${spieltagId}`,
+        SK: `GAME#${gameId}`,
+        ...game,
+        entityType: 'GAME'
+      }
+    }));
+
+    return {
+      statusCode: 200,
+      headers: responseHeaders,
+      body: JSON.stringify(game)
+    };
+  } catch (error) {
+    console.error('Error updating game:', error);
+    return {
+      statusCode: 500,
+      headers: responseHeaders,
+      body: JSON.stringify({ error: 'Failed to update game' })
+    };
+  }
+};
