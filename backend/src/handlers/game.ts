@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { Game } from '../types/game';
 
 const client = new DynamoDBClient({});
@@ -298,6 +298,60 @@ export const updateGame = async (event: APIGatewayProxyEvent): Promise<APIGatewa
       statusCode: 500,
       headers: responseHeaders,
       body: JSON.stringify({ error: 'Failed to update game' })
+    };
+  }
+};
+
+
+/**
+ * DELETE /spieltage/{spieltagId}/games/{gameId} - Spiel löschen
+ */
+export const deleteGame = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  if (getHttpMethod(event) === 'OPTIONS') {
+    return handleOptions();
+  }
+  
+  try {
+    const userId = getUserIdFromEvent(event);
+    if (!userId) {
+      return {
+        statusCode: 401,
+        headers: responseHeaders,
+        body: JSON.stringify({ error: 'Unauthorized' })
+      };
+    }
+
+    const spieltagId = event.pathParameters?.spieltagId;
+    const gameId = event.pathParameters?.gameId;
+    
+    if (!spieltagId || !gameId) {
+      return {
+        statusCode: 400,
+        headers: responseHeaders,
+        body: JSON.stringify({ error: 'Missing spieltagId or gameId' })
+      };
+    }
+
+    // Spiel aus DynamoDB löschen
+    await docClient.send(new DeleteCommand({
+      TableName: TABLE_NAME,
+      Key: {
+        PK: `SPIELTAG#${spieltagId}`,
+        SK: `GAME#${gameId}`
+      }
+    }));
+
+    return {
+      statusCode: 200,
+      headers: responseHeaders,
+      body: JSON.stringify({ message: 'Game deleted successfully' })
+    };
+  } catch (error) {
+    console.error('Error deleting game:', error);
+    return {
+      statusCode: 500,
+      headers: responseHeaders,
+      body: JSON.stringify({ error: 'Failed to delete game' })
     };
   }
 };

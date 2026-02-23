@@ -233,6 +233,22 @@ Resources:
             Path: /spieltage/{spieltagId}/games/{gameId}
             Method: put
 
+  # Lambda: Spiel löschen
+  DeleteGameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/game.deleteGame
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        DeleteGame:
+          Type: Api
+          Properties:
+            Path: /spieltage/{spieltagId}/games/{gameId}
+            Method: delete
+
   # Lambda: Spiele eines Spieltags abrufen
   ListGamesFunction:
     Type: AWS::Serverless::Function

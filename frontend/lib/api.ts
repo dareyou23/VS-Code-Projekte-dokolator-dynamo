@@ -47,6 +47,14 @@ export const api = {
     return res.json();
   },
 
+  async deleteGame(spieltagId: string, gameId: string) {
+    const res = await fetch(`${API_BASE_URL}/spieltage/${spieltagId}/games/${gameId}`, {
+      method: 'DELETE',
+      headers: { 'x-user-id': USER_ID },
+    });
+    return res.json();
+  },
+
   async getSpieltagStats(spieltagId: string) {
     const res = await fetch(`${API_BASE_URL}/spieltage/${spieltagId}/stats`, {
       headers: { 'x-user-id': USER_ID },

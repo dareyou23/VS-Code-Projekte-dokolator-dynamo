@@ -290,17 +290,92 @@ export default function Home() {
         return;
       }
       
-      // IM EDIT-MODUS: Hochzeit wird wie normales Spiel behandelt (nur Hauptspiel, keine 2 Zeilen)
+      // IM EDIT-MODUS: Hochzeit = Altes Spiel löschen + 2 neue Zeilen mit gleicher gameNumber
       if (editingGameId) {
-        // Nur Hauptspiel-Punkte berechnen (User-Wert)
+        const gameToUpdate = games.find(g => g.gameId === editingGameId);
+        if (!gameToUpdate) {
+          alert('Spiel nicht gefunden');
+          return;
+        }
+        
+        // Zeile 1: Suche (fester Wert 1, Solo-Berechnung) - MIT Bock-Multiplikator
+        const searchValue = 1 * bockMultiplier;
+        const searchScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, searchValue);
+        
+        // Zeile 2: Spiel (User-Wert, Re/Kontra oder Solo) - MIT Bock-Multiplikator
+        let gameScores: Record<string, number> = {};
         if (rePlayers.length === 1) {
           // MIT Partner: Re/Kontra mit [hochzeitSpieler, partner]
-          scores = calculateReKontraScores([hochzeitPlayers[0], rePlayers[0]], activePlayers, effectiveGameValue);
+          gameScores = calculateReKontraScores([hochzeitPlayers[0], rePlayers[0]], activePlayers, effectiveGameValue);
         } else {
           // OHNE Partner: Solo
-          scores = calculateSoloScores(hochzeitPlayers[0], activePlayers, effectiveGameValue);
+          gameScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, effectiveGameValue);
         }
-        // Weiter zum normalen UPDATE-Pfad (kein return hier!)
+        
+        // Players-Objekt für Zeile 1 (Suche)
+        const playersSearch: { [key: string]: { roles: string[]; points: number } } = {};
+        for (let i = 0; i < playerCount; i++) {
+          const name = playerNames[i].trim();
+          if (!name) continue;
+          
+          const roles = name === hochzeitPlayers[0] ? ['hochzeit'] : (name === geberName ? ['geber'] : []);
+          const points = searchScores[name] || 0;
+          playersSearch[name] = { roles, points };
+        }
+        
+        // Players-Objekt für Zeile 2 (Spiel)
+        const playersGame: { [key: string]: { roles: string[]; points: number } } = {};
+        for (let i = 0; i < playerCount; i++) {
+          const name = playerNames[i].trim();
+          if (!name) continue;
+          
+          let roles: string[] = [];
+          if (name === hochzeitPlayers[0]) {
+            roles = ['hochzeit'];
+          } else if (rePlayers.length === 1 && name === rePlayers[0]) {
+            roles = ['re'];
+          } else if (name === geberName) {
+            roles = ['geber'];
+          }
+          
+          const points = gameScores[name] || 0;
+          playersGame[name] = { roles, points };
+        }
+        
+        try {
+          // 1. Altes Spiel löschen
+          await api.deleteGame(currentSpieltag.spieltagId, editingGameId);
+          
+          // 2. Zeile 1: Suche speichern (mit der GLEICHEN gameNumber wie das gelöschte Spiel!)
+          await api.addGame(currentSpieltag.spieltagId, {
+            gameValue: searchValue,
+            bockTrigger: false,
+            players: playersSearch,
+            hochzeitPhase: 'suche',
+            gameNumber: gameToUpdate.gameNumber // WICHTIG: Gleiche Nummer wie gelöschtes Spiel!
+          });
+          
+          // 3. Zeile 2: Spiel speichern (GLEICHE gameNumber!)
+          await api.addGame(currentSpieltag.spieltagId, {
+            gameValue: effectiveGameValue,
+            bockTrigger,
+            players: playersGame,
+            hochzeitPhase: rePlayers.length === 1 ? 'mit_partner' : 'solo',
+            gameNumber: gameToUpdate.gameNumber // WICHTIG: Gleiche Nummer!
+          });
+
+          const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
+          setGames(spieltagData.games || []);
+          
+          setEditingGameId(null);
+          setGameValue(null);
+          setCustomGameValue('');
+          setBockTrigger(false);
+        } catch (error) {
+          console.error('Fehler:', error);
+          alert('Fehler beim Aktualisieren des Hochzeit-Spiels');
+        }
+        return; // Wichtig: return nach Edit-Modus
       } else {
         // IM CREATE-MODUS: Hochzeit = ZWEI ZEILEN mit GLEICHER Spielnummer
         // Zeile 1: Suche (fester Wert 1, Solo-Berechnung) - MIT Bock-Multiplikator
