@@ -714,8 +714,8 @@ export default function Home() {
                           const g = games[i];
                           const isBockRound = bockStateForGame.active > 0;
                           
-                          // Aktive Spieler für dieses Spiel
-                          const activeCount = Object.values(g.players).filter(p => p.points !== 0).length;
+                          // Anzahl Spieler für dieses Spiel (4 oder 5)
+                          const playerCountForGame = Object.keys(g.players).length;
                           
                           // Bock-State aktualisieren
                           if (isBockRound) {
@@ -726,11 +726,11 @@ export default function Home() {
                           if (g.bockTrigger) {
                             if (bockStateForGame.active === 0) {
                               bockStateForGame.playedInStreak = 0;
-                              bockStateForGame.totalInStreak = activeCount;
+                              bockStateForGame.totalInStreak = playerCountForGame;
                             } else {
-                              bockStateForGame.totalInStreak += activeCount;
+                              bockStateForGame.totalInStreak += playerCountForGame;
                             }
-                            bockStateForGame.active += activeCount;
+                            bockStateForGame.active += playerCountForGame;
                           }
                           
                           if (bockStateForGame.active === 0 && bockStateForGame.playedInStreak >= bockStateForGame.totalInStreak && bockStateForGame.totalInStreak > 0) {
@@ -746,7 +746,7 @@ export default function Home() {
                         for (let i = 0; i < gameIndex; i++) {
                           const g = games[i];
                           const isBockRound = tempState.active > 0;
-                          const activeCount = Object.values(g.players).filter(p => p.points !== 0).length;
+                          const playerCountForGame = Object.keys(g.players).length;
                           
                           if (isBockRound) {
                             tempState.active--;
@@ -756,11 +756,11 @@ export default function Home() {
                           if (g.bockTrigger) {
                             if (tempState.active === 0) {
                               tempState.playedInStreak = 0;
-                              tempState.totalInStreak = activeCount;
+                              tempState.totalInStreak = playerCountForGame;
                             } else {
-                              tempState.totalInStreak += activeCount;
+                              tempState.totalInStreak += playerCountForGame;
                             }
-                            tempState.active += activeCount;
+                            tempState.active += playerCountForGame;
                           }
                           
                           if (tempState.active === 0 && tempState.playedInStreak >= tempState.totalInStreak && tempState.totalInStreak > 0) {
