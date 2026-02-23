@@ -484,31 +484,30 @@ export default function Home() {
                       </tr>
                     </thead>
                     <tbody>
-                      {games.map((game) => (
-                        <tr key={game.gameId || game.gameNumber}>
-                          <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameNumber}</td>
-                          <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameValue}</td>
-                          {playerNames.filter(n => n.trim()).map(name => {
-                            const points = game.players[name]?.points || 0;
-                            return (
-                              <td key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', fontWeight: 'bold', color: points >= 0 ? '#28a745' : '#dc3545' }}>
-                                {points >= 0 ? '+' : ''}{points}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                      <tr style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
-                        <td colSpan={2} style={{ border: '1px solid #ddd', padding: '10px' }}>GESAMT</td>
-                        {playerNames.filter(n => n.trim()).map(name => {
-                          const total = finalScores[name]?.points || 0;
-                          return (
-                            <td key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', color: total >= 0 ? '#28a745' : '#dc3545' }}>
-                              {total >= 0 ? '+' : ''}{total}
-                            </td>
-                          );
-                        })}
-                      </tr>
+                      {games.map((game, gameIndex) => {
+                        // Kumulierte Punkte bis zu diesem Spiel berechnen
+                        const cumulativeScores: { [key: string]: number } = {};
+                        playerNames.filter(n => n.trim()).forEach(name => {
+                          cumulativeScores[name] = games.slice(0, gameIndex + 1).reduce((sum, g) => {
+                            return sum + (g.players[name]?.points || 0);
+                          }, 0);
+                        });
+                        
+                        return (
+                          <tr key={game.gameId || game.gameNumber}>
+                            <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameNumber}</td>
+                            <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameValue}</td>
+                            {playerNames.filter(n => n.trim()).map(name => {
+                              const cumulative = cumulativeScores[name] || 0;
+                              return (
+                                <td key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', fontWeight: 'bold', color: cumulative >= 0 ? '#28a745' : '#dc3545' }}>
+                                  {cumulative >= 0 ? '+' : ''}{cumulative}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
