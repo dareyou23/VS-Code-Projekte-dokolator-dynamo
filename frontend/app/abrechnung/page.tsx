@@ -65,10 +65,20 @@ export default function Abrechnung() {
     const results = calculateResults();
     const payments: { [key: string]: number } = {};
     
+    // Finde den Gewinner (höchste Punktzahl)
+    const maxPoints = Math.max(...Object.values(results));
+    
     PLAYER_ORDER.forEach(name => {
       const points = results[name] || 0;
-      const payment = tageseinsatz + (points * punktwert);
-      payments[name] = payment;
+      
+      if (points === maxPoints) {
+        // Gewinner zahlt nur den Sockelbetrag
+        payments[name] = tageseinsatz;
+      } else {
+        // Andere zahlen: Sockelbetrag + (Differenz zum Gewinner × Punktwert)
+        const differenz = maxPoints - points;
+        payments[name] = tageseinsatz + (differenz * punktwert);
+      }
     });
     
     return payments;
@@ -77,15 +87,15 @@ export default function Abrechnung() {
   const results = calculateResults();
   const payments = calculatePayments();
   
-  // Finde Gewinner und Verlierer
-  const sortedByPayment = PLAYER_ORDER.map(name => ({
+  // Finde Gewinner (höchste Punktzahl = niedrigste Zahlung) und Verlierer (niedrigste Punktzahl = höchste Zahlung)
+  const sortedByPoints = PLAYER_ORDER.map(name => ({
     name,
     points: results[name],
     payment: payments[name]
-  })).sort((a: { name: string; points: number; payment: number }, b: { name: string; points: number; payment: number }) => a.payment - b.payment);
+  })).sort((a: { name: string; points: number; payment: number }, b: { name: string; points: number; payment: number }) => b.points - a.points);
   
-  const winner = sortedByPayment[0]; // Niedrigste Zahlung = Gewinner
-  const loser = sortedByPayment[sortedByPayment.length - 1]; // Höchste Zahlung = Verlierer
+  const winner = sortedByPoints[0]; // Höchste Punktzahl
+  const loser = sortedByPoints[sortedByPoints.length - 1]; // Niedrigste Punktzahl
 
   if (loading) {
     return (
@@ -237,7 +247,7 @@ export default function Abrechnung() {
                             textAlign: 'center',
                             fontSize: '22px',
                             fontWeight: 'bold',
-                            color: payment < tageseinsatz ? '#28a745' : payment > tageseinsatz ? '#dc3545' : '#6c757d',
+                            color: isWinner ? '#28a745' : isLoser ? '#dc3545' : '#6c757d',
                             backgroundColor: isWinner ? '#d4edda' : isLoser ? '#f8d7da' : 'white',
                             position: 'relative'
                           }}
