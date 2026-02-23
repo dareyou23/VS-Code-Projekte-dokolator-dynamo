@@ -290,103 +290,116 @@ export default function Home() {
         return;
       }
       
-      // Hochzeit: ZWEI ZEILEN mit GLEICHER Spielnummer
-      // Zeile 1: Suche (fester Wert 1, Solo-Berechnung) - MIT Bock-Multiplikator
-      const searchValue = 1 * bockMultiplier;
-      const searchScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, searchValue);
-      
-      // Zeile 2: Spiel (User-Wert, Re/Kontra oder Solo) - MIT Bock-Multiplikator
-      let gameScores: Record<string, number> = {};
-      if (rePlayers.length === 1) {
-        // MIT Partner: Re/Kontra mit [hochzeitSpieler, partner]
-        gameScores = calculateReKontraScores([hochzeitPlayers[0], rePlayers[0]], activePlayers, effectiveGameValue);
+      // IM EDIT-MODUS: Hochzeit wird wie normales Spiel behandelt (nur Hauptspiel, keine 2 Zeilen)
+      if (editingGameId) {
+        // Nur Hauptspiel-Punkte berechnen (User-Wert)
+        if (rePlayers.length === 1) {
+          // MIT Partner: Re/Kontra mit [hochzeitSpieler, partner]
+          scores = calculateReKontraScores([hochzeitPlayers[0], rePlayers[0]], activePlayers, effectiveGameValue);
+        } else {
+          // OHNE Partner: Solo
+          scores = calculateSoloScores(hochzeitPlayers[0], activePlayers, effectiveGameValue);
+        }
+        // Weiter zum normalen UPDATE-Pfad (kein return hier!)
       } else {
-        // OHNE Partner: Solo
-        gameScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, effectiveGameValue);
-      }
-      
-      // Players-Objekt für Zeile 1 (Suche)
-      const playersSearch: { [key: string]: { roles: string[]; points: number } } = {};
-      for (let i = 0; i < playerCount; i++) {
-        const name = playerNames[i].trim();
-        if (!name) continue;
+        // IM CREATE-MODUS: Hochzeit = ZWEI ZEILEN mit GLEICHER Spielnummer
+        // Zeile 1: Suche (fester Wert 1, Solo-Berechnung) - MIT Bock-Multiplikator
+        const searchValue = 1 * bockMultiplier;
+        const searchScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, searchValue);
         
-        const roles = name === hochzeitPlayers[0] ? ['hochzeit'] : (name === geberName ? ['geber'] : []);
-        const points = searchScores[name] || 0;
-        playersSearch[name] = { roles, points };
-      }
-      
-      // Players-Objekt für Zeile 2 (Spiel)
-      const playersGame: { [key: string]: { roles: string[]; points: number } } = {};
-      for (let i = 0; i < playerCount; i++) {
-        const name = playerNames[i].trim();
-        if (!name) continue;
-        
-        let roles: string[] = [];
-        if (name === hochzeitPlayers[0]) {
-          roles = ['hochzeit'];
-        } else if (rePlayers.length === 1 && name === rePlayers[0]) {
-          roles = ['re'];
-        } else if (name === geberName) {
-          roles = ['geber'];
+        // Zeile 2: Spiel (User-Wert, Re/Kontra oder Solo) - MIT Bock-Multiplikator
+        let gameScores: Record<string, number> = {};
+        if (rePlayers.length === 1) {
+          // MIT Partner: Re/Kontra mit [hochzeitSpieler, partner]
+          gameScores = calculateReKontraScores([hochzeitPlayers[0], rePlayers[0]], activePlayers, effectiveGameValue);
+        } else {
+          // OHNE Partner: Solo
+          gameScores = calculateSoloScores(hochzeitPlayers[0], activePlayers, effectiveGameValue);
         }
         
-        const points = gameScores[name] || 0;
-        playersGame[name] = { roles, points };
+        // Players-Objekt für Zeile 1 (Suche)
+        const playersSearch: { [key: string]: { roles: string[]; points: number } } = {};
+        for (let i = 0; i < playerCount; i++) {
+          const name = playerNames[i].trim();
+          if (!name) continue;
+          
+          const roles = name === hochzeitPlayers[0] ? ['hochzeit'] : (name === geberName ? ['geber'] : []);
+          const points = searchScores[name] || 0;
+          playersSearch[name] = { roles, points };
+        }
+        
+        // Players-Objekt für Zeile 2 (Spiel)
+        const playersGame: { [key: string]: { roles: string[]; points: number } } = {};
+        for (let i = 0; i < playerCount; i++) {
+          const name = playerNames[i].trim();
+          if (!name) continue;
+          
+          let roles: string[] = [];
+          if (name === hochzeitPlayers[0]) {
+            roles = ['hochzeit'];
+          } else if (rePlayers.length === 1 && name === rePlayers[0]) {
+            roles = ['re'];
+          } else if (name === geberName) {
+            roles = ['geber'];
+          }
+          
+          const points = gameScores[name] || 0;
+          playersGame[name] = { roles, points };
+        }
+        
+        try {
+          // Zeile 1: Suche speichern (neue gameNumber wird automatisch vergeben)
+          const searchResult = await api.addGame(currentSpieltag.spieltagId, {
+            gameValue: searchValue,
+            bockTrigger: false, // Nur beim Hauptspiel (Zeile 2) triggern
+            players: playersSearch,
+            hochzeitPhase: 'suche' // Marker für Hochzeit-Suche
+          });
+          
+          // Zeile 2: Spiel speichern (GLEICHE gameNumber wie Zeile 1!)
+          await api.addGame(currentSpieltag.spieltagId, {
+            gameValue: effectiveGameValue,
+            bockTrigger, // Bock-Trigger beim Hauptspiel
+            players: playersGame,
+            hochzeitPhase: rePlayers.length === 1 ? 'mit_partner' : 'solo', // Marker für Hochzeit-Spiel
+            gameNumber: searchResult.gameNumber // WICHTIG: Gleiche Nummer!
+          });
+
+          const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
+          setGames(spieltagData.games || []);
+
+          // Bock-State aktualisieren (aus Referenz, Zeile 940-960)
+          const newBockState = updateBockState(
+            bockActive,
+            bockPlayedInStreak,
+            bockTotalInStreak,
+            isBockRound,
+            bockTrigger,
+            playerCount // Anzahl Spieler (4 oder 5), nicht activePlayers!
+          );
+          
+          setBockActive(newBockState.bockActive);
+          setBockPlayedInStreak(newBockState.bockPlayedInStreak);
+          setBockTotalInStreak(newBockState.bockTotalInStreak);
+
+          // Geber rotieren
+          const currentDealerIndex = playerRoles.findIndex(role => role === 'geber' || role?.startsWith('geber+'));
+          const nextDealerIndex = currentDealerIndex !== -1 ? (currentDealerIndex + 1) % playerCount : 0;
+          
+          const newRoles = new Array(playerCount).fill('');
+          newRoles[nextDealerIndex] = 'geber';
+          setPlayerRoles(newRoles);
+          
+          // Spielwert und Bock-Trigger zurücksetzen
+          setGameValue(null);
+          setCustomGameValue('');
+          setBockTrigger(false);
+        } catch (error) {
+          console.error('Fehler:', error);
+          alert('Fehler beim Speichern des Hochzeit-Spiels');
+        }
+        return; // Wichtig: Hier return, damit der normale Flow nicht weiterläuft
       }
-      
-      try {
-        // Zeile 1: Suche speichern (neue gameNumber wird automatisch vergeben)
-        const searchResult = await api.addGame(currentSpieltag.spieltagId, {
-          gameValue: searchValue,
-          bockTrigger: false, // Nur beim Hauptspiel (Zeile 2) triggern
-          players: playersSearch,
-          hochzeitPhase: 'suche' // Marker für Hochzeit-Suche
-        });
-        
-        // Zeile 2: Spiel speichern (GLEICHE gameNumber wie Zeile 1!)
-        await api.addGame(currentSpieltag.spieltagId, {
-          gameValue: effectiveGameValue,
-          bockTrigger, // Bock-Trigger beim Hauptspiel
-          players: playersGame,
-          hochzeitPhase: rePlayers.length === 1 ? 'mit_partner' : 'solo', // Marker für Hochzeit-Spiel
-          gameNumber: searchResult.gameNumber // WICHTIG: Gleiche Nummer!
-        });
-
-        const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
-        setGames(spieltagData.games || []);
-
-        // Bock-State aktualisieren (aus Referenz, Zeile 940-960)
-        const newBockState = updateBockState(
-          bockActive,
-          bockPlayedInStreak,
-          bockTotalInStreak,
-          isBockRound,
-          bockTrigger,
-          playerCount // Anzahl Spieler (4 oder 5), nicht activePlayers!
-        );
-        
-        setBockActive(newBockState.bockActive);
-        setBockPlayedInStreak(newBockState.bockPlayedInStreak);
-        setBockTotalInStreak(newBockState.bockTotalInStreak);
-
-        // Geber rotieren
-        const currentDealerIndex = playerRoles.findIndex(role => role === 'geber' || role?.startsWith('geber+'));
-        const nextDealerIndex = currentDealerIndex !== -1 ? (currentDealerIndex + 1) % playerCount : 0;
-        
-        const newRoles = new Array(playerCount).fill('');
-        newRoles[nextDealerIndex] = 'geber';
-        setPlayerRoles(newRoles);
-        
-        // Spielwert und Bock-Trigger zurücksetzen
-        setGameValue(null);
-        setCustomGameValue('');
-        setBockTrigger(false);
-      } catch (error) {
-        console.error('Fehler:', error);
-        alert('Fehler beim Speichern des Hochzeit-Spiels');
-      }
-      return; // Wichtig: Hier return, damit der normale Flow nicht weiterläuft
     } else {
       // Normal Re/Kontra: GENAU 2 Re-Spieler benötigt (aus Referenz, Zeile 598)
       if (rePlayers.length !== 2) {
