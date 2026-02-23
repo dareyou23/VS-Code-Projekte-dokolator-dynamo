@@ -669,7 +669,7 @@ export default function Home() {
                               
                               // Im 4-Spieler-Modus: Geber-Indikator hinzufügen (wenn Geber eine andere Rolle hat)
                               if (playerCount === 4 && isGeber && roleChar !== 'G') {
-                                roleChar = 'G+' + roleChar;
+                                roleChar = '⌀+' + roleChar;
                               }
                               
                               return (
