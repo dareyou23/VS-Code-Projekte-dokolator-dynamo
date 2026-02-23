@@ -277,3 +277,61 @@ export const completeSpieltag = async (event: APIGatewayProxyEvent): Promise<API
     };
   }
 };
+
+/**
+ * PUT /spieltage/{spieltagId}/entnahme - Entnahme/Einzahlung aktualisieren
+ */
+export const updateEntnahme = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  if (getHttpMethod(event) === 'OPTIONS') {
+    return handleOptions();
+  }
+  
+  try {
+    const userId = getUserIdFromEvent(event);
+    if (!userId) {
+      return {
+        statusCode: 401,
+        headers: responseHeaders,
+        body: JSON.stringify({ error: 'Unauthorized' })
+      };
+    }
+
+    const spieltagId = event.pathParameters?.spieltagId;
+    if (!spieltagId) {
+      return {
+        statusCode: 400,
+        headers: responseHeaders,
+        body: JSON.stringify({ error: 'Missing spieltagId' })
+      };
+    }
+
+    const body = JSON.parse(event.body || '{}');
+    const entnahme = body.entnahme !== undefined ? body.entnahme : 0;
+
+    await docClient.send(new UpdateCommand({
+      TableName: TABLE_NAME,
+      Key: {
+        PK: `USER#${userId}`,
+        SK: `SPIELTAG#${spieltagId}`
+      },
+      UpdateExpression: 'SET entnahme = :entnahme, updatedAt = :updatedAt',
+      ExpressionAttributeValues: {
+        ':entnahme': entnahme,
+        ':updatedAt': new Date().toISOString()
+      }
+    }));
+
+    return {
+      statusCode: 200,
+      headers: responseHeaders,
+      body: JSON.stringify({ message: 'Entnahme updated', entnahme })
+    };
+  } catch (error) {
+    console.error('Error updating entnahme:', error);
+    return {
+      statusCode: 500,
+      headers: responseHeaders,
+      body: JSON.stringify({ error: 'Failed to update entnahme' })
+    };
+  }
+};

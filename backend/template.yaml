@@ -201,6 +201,22 @@ Resources:
             Path: /spieltage/{spieltagId}/complete
             Method: put
 
+  # Lambda: Entnahme/Einzahlung aktualisieren
+  UpdateEntnahmeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: dist/
+      Handler: handlers/spieltag.updateEntnahme
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GamesTable
+      Events:
+        UpdateEntnahme:
+          Type: Api
+          Properties:
+            Path: /spieltage/{spieltagId}/entnahme
+            Method: put
+
   # Lambda: Spiel hinzufügen
   AddGameFunction:
     Type: AWS::Serverless::Function

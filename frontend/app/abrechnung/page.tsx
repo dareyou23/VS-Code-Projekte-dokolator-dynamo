@@ -264,7 +264,7 @@ export default function Abrechnung() {
             </div>
 
             {/* Zusammenfassung */}
-            <div style={{ backgroundColor: '#e7f3ff', padding: '20px', borderRadius: '8px', border: '2px solid #0056b3' }}>
+            <div style={{ backgroundColor: '#e7f3ff', padding: '20px', borderRadius: '8px', border: '2px solid #0056b3', marginBottom: '30px' }}>
               <h3 style={{ fontSize: '16px', marginBottom: '15px', color: '#0056b3' }}>📋 Zusammenfassung</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', fontSize: '14px' }}>
                 <div>
@@ -284,6 +284,80 @@ export default function Abrechnung() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Rollen-Statistik */}
+            <div style={{ backgroundColor: '#fff9e6', padding: '20px', borderRadius: '8px', border: '2px solid #ffc107' }}>
+              <h3 style={{ fontSize: '16px', marginBottom: '15px', color: '#856404' }}>🎭 Rollen-Statistik</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#ffc107' }}>
+                    <th style={{ padding: '12px', textAlign: 'left', fontSize: '14px', fontWeight: 'bold', border: '1px solid #ddd' }}>Rolle</th>
+                    {PLAYER_ORDER.map(name => (
+                      <th key={name} style={{ padding: '12px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', border: '1px solid #ddd' }}>{name}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {['re', 'solo', 'hochzeit'].map((role, index) => {
+                    const roleLabel = role === 're' ? 'Re' : role === 'solo' ? 'Solo' : 'Hochzeit';
+                    const bgColor = index % 2 === 0 ? '#fff' : '#f8f9fa';
+                    
+                    return (
+                      <tr key={role} style={{ backgroundColor: bgColor }}>
+                        <td style={{ padding: '12px', fontWeight: 'bold', border: '1px solid #ddd' }}>{roleLabel}</td>
+                        {PLAYER_ORDER.map(name => {
+                          // Zähle wie oft dieser Spieler diese Rolle hatte
+                          const count = games.reduce((sum, game) => {
+                            const playerData = game.players[name];
+                            if (!playerData) return sum;
+                            
+                            const roles = playerData.roles || [];
+                            const hasRole = roles.some(r => 
+                              r === role || 
+                              r === `geber+${role}` ||
+                              (role === 're' && (r === 're' || r === 'geber+re'))
+                            );
+                            
+                            return sum + (hasRole ? 1 : 0);
+                          }, 0);
+                          
+                          return (
+                            <td key={name} style={{ padding: '12px', textAlign: 'center', fontSize: '16px', fontWeight: 'bold', color: '#0056b3', border: '1px solid #ddd' }}>
+                              {count}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {/* Kontra-Zeile (alle Spiele ohne Re/Solo/Hochzeit) */}
+                  <tr style={{ backgroundColor: '#f8f9fa' }}>
+                    <td style={{ padding: '12px', fontWeight: 'bold', border: '1px solid #ddd' }}>Kontra</td>
+                    {PLAYER_ORDER.map(name => {
+                      const count = games.reduce((sum, game) => {
+                        const playerData = game.players[name];
+                        if (!playerData) return sum;
+                        
+                        const roles = playerData.roles || [];
+                        // Kontra = keine spezielle Rolle (nicht Re, Solo, Hochzeit, nur Geber oder leer)
+                        const isKontra = roles.length === 0 || 
+                                        (roles.length === 1 && roles[0] === 'geber') ||
+                                        (!roles.some(r => r.includes('re') || r.includes('solo') || r.includes('hochzeit')));
+                        
+                        // Nur zählen wenn Spieler Punkte hat (also aktiv war)
+                        return sum + (isKontra && playerData.points !== 0 ? 1 : 0);
+                      }, 0);
+                      
+                      return (
+                        <td key={name} style={{ padding: '12px', textAlign: 'center', fontSize: '16px', fontWeight: 'bold', color: '#0056b3', border: '1px solid #ddd' }}>
+                          {count}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </>
         )}

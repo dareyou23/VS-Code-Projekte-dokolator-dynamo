@@ -28,6 +28,7 @@ export interface Spieltag {
   status: 'active' | 'completed';
   startgeld: number;
   punktwert: number;
+  entnahme?: number; // Entnahme (positiv) oder Einzahlung (negativ)
   // Bock-State
   bockRoundsActive?: number;
   bockGamesPlayedInStreak?: number;

@@ -68,4 +68,13 @@ export const api = {
     });
     return res.json();
   },
+
+  async updateEntnahme(spieltagId: string, entnahme: number) {
+    const res = await fetch(`${API_BASE_URL}/spieltage/${spieltagId}/entnahme`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-user-id': USER_ID },
+      body: JSON.stringify({ entnahme }),
+    });
+    return res.json();
+  },
 };

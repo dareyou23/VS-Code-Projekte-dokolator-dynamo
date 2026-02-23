@@ -112,7 +112,7 @@ export default function Home() {
     try {
       const newSpieltag = await api.createSpieltag({
         date: new Date().toISOString(),
-        startgeld: 10.00,
+        startgeld: 15.00,
         punktwert: 0.05,
         playerNames: defaultPlayers,
       });
@@ -631,6 +631,12 @@ export default function Home() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <h1 style={{ color: '#0056b3', margin: 0 }}>Dokolator - Vollversion</h1>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <Link href="/historie" style={{ padding: '10px 20px', backgroundColor: '#6f42c1', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+              📜 Historie
+            </Link>
+            <Link href="/rollen-historie" style={{ padding: '10px 20px', backgroundColor: '#fd7e14', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+              🎭 Rollen
+            </Link>
             <Link href="/grafik" style={{ padding: '10px 20px', backgroundColor: '#0056b3', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
               📊 Grafik
             </Link>

@@ -32,6 +32,7 @@ export interface Spieltag {
   punktwert: number;             // Wert pro Punkt (z.B. 0.05)
   playerNames: string[];         // Liste der Spieler an diesem Tag
   status: 'active' | 'completed';
+  entnahme?: number;             // Entnahme (positiv) oder Einzahlung (negativ)
   createdAt: string;
   updatedAt: string;
   // Bock-State (wird nach jedem Spiel aktualisiert)
