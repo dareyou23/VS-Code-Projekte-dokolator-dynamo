@@ -640,8 +640,9 @@ export default function Home() {
                               // Rolle ermitteln (aus Referenz, Zeile 656-680)
                               let roleChar = '-';
                               let bgColor = '#fff';
+                              const isGeber = roles.includes('geber') || roles.some(r => r.startsWith('geber+'));
                               
-                              // Priorität: Solo > Re > Hochzeit > Geber > Kontra
+                              // Priorität: Solo > Re > Hochzeit > Kontra
                               if (roles.includes('solo') || roles.includes('geber+solo')) {
                                 roleChar = 'S';
                                 bgColor = '#ffe6e6';
@@ -664,6 +665,11 @@ export default function Home() {
                                 // Kontra (aktiver Spieler ohne spezielle Rolle)
                                 roleChar = 'K';
                                 bgColor = '#fff0e6';
+                              }
+                              
+                              // Im 4-Spieler-Modus: Geber-Indikator hinzufügen (wenn Geber eine andere Rolle hat)
+                              if (playerCount === 4 && isGeber && roleChar !== 'G') {
+                                roleChar = 'G+' + roleChar;
                               }
                               
                               return (
