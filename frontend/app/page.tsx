@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 import { calculateReKontraScores, getActivePlayers } from '@/lib/gameLogic';
+import { calculateSoloScores } from '@/lib/soloLogic';
 import type { GameData, Spieltag } from '@/lib/types';
 
 const GAME_VALUES = [8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8];
@@ -148,13 +149,21 @@ export default function Home() {
     // Rollen sammeln
     let geberName: string | null = null;
     const rePlayers: string[] = [];
+    const soloPlayers: string[] = [];
     
     for (let i = 0; i < playerCount; i++) {
       const name = playerNames[i].trim();
       const role = playerRoles[i];
       
-      if (role === 'geber') geberName = name;
-      else if (role === 're') rePlayers.push(name);
+      if (role === 'geber' || role?.startsWith('geber+')) {
+        geberName = name;
+      }
+      if (role === 're' || role === 'geber+re') {
+        rePlayers.push(name);
+      }
+      if (role === 'solo' || role === 'geber+solo') {
+        soloPlayers.push(name);
+      }
     }
 
     // VALIDIERUNG (aus Referenz, Zeile 554-601)
@@ -166,20 +175,47 @@ export default function Home() {
     // Aktive Spieler ermitteln (bei 5 Spielern sitzt Geber aus)
     const activePlayers = getActivePlayers(playerNames.filter(n => n.trim()), geberName, playerCount);
     
-    // Normal Re/Kontra: GENAU 2 Re-Spieler benötigt (aus Referenz, Zeile 598)
-    if (rePlayers.length !== 2) {
-      alert('Normal: 2 Re-Spieler benötigt.');
-      return;
-    }
-
-    // Re-Spieler müssen aktive Spieler sein (aus Referenz, Zeile 599-601)
-    if (!rePlayers.every(rePlayer => activePlayers.includes(rePlayer))) {
-      alert('Re-Spieler müssen aktive Spieler sein (können bei 5 Spielern nicht der Geber sein).');
-      return;
+    // Spieltyp ermitteln
+    let gameType = 'normal';
+    if (soloPlayers.length > 0) {
+      gameType = 'solo';
     }
     
-    // Punkte berechnen (EXAKT aus Referenz)
-    const scores = calculateReKontraScores(rePlayers, activePlayers, gameValue);
+    let scores: Record<string, number> = {};
+    
+    if (gameType === 'solo') {
+      // Solo-Validierung (aus Referenz, Zeile 580-586)
+      if (soloPlayers.length !== 1) {
+        alert('Solo: Genau 1 Solo-Spieler.');
+        return;
+      }
+      if (rePlayers.length > 0) {
+        alert('Solo: Keine Re-Spieler.');
+        return;
+      }
+      if (!activePlayers.includes(soloPlayers[0])) {
+        alert('Solo-Spieler muss aktiv sein (kann bei 5 Spielern nicht der Geber sein).');
+        return;
+      }
+      
+      // Solo-Punkte berechnen
+      scores = calculateSoloScores(soloPlayers[0], activePlayers, gameValue);
+    } else {
+      // Normal Re/Kontra: GENAU 2 Re-Spieler benötigt (aus Referenz, Zeile 598)
+      if (rePlayers.length !== 2) {
+        alert('Normal: 2 Re-Spieler benötigt.');
+        return;
+      }
+
+      // Re-Spieler müssen aktive Spieler sein (aus Referenz, Zeile 599-601)
+      if (!rePlayers.every(rePlayer => activePlayers.includes(rePlayer))) {
+        alert('Re-Spieler müssen aktive Spieler sein (können bei 5 Spielern nicht der Geber sein).');
+        return;
+      }
+      
+      // Punkte berechnen (EXAKT aus Referenz)
+      scores = calculateReKontraScores(rePlayers, activePlayers, gameValue);
+    }
     
     // Players-Objekt erstellen
     const playersWithPoints: { [key: string]: { roles: string[]; points: number } } = {};
@@ -207,14 +243,14 @@ export default function Home() {
       setGames(spieltagData.games || []);
 
       // Geber rotieren
-      const currentDealerIndex = playerRoles.findIndex(role => role === 'geber');
+      const currentDealerIndex = playerRoles.findIndex(role => role === 'geber' || role?.startsWith('geber+'));
       const nextDealerIndex = currentDealerIndex !== -1 ? (currentDealerIndex + 1) % playerCount : 0;
       
       const newRoles = new Array(playerCount).fill('');
       newRoles[nextDealerIndex] = 'geber';
       setPlayerRoles(newRoles);
       
-      // Spielwert zurücksetzen
+      // Spielwert zurücksetzen auf null (nicht auf '')
       setGameValue(null);
       setCustomGameValue('');
     } catch (error) {
@@ -255,12 +291,12 @@ export default function Home() {
     <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
       <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1200px', margin: '0 auto' }}>
         
-        <h1 style={{ color: '#0056b3', textAlign: 'center', marginBottom: '10px' }}>Dokolator - Schritt 1 Test</h1>
+        <h1 style={{ color: '#0056b3', textAlign: 'center', marginBottom: '10px' }}>Dokolator - Schritt 2 Test</h1>
         <div style={{ textAlign: 'center', fontSize: '14px', color: '#666', marginBottom: '20px' }}>
           {currentDate}
         </div>
         <div style={{ textAlign: 'center', fontSize: '12px', color: '#999', marginBottom: '20px' }}>
-          NUR Normal Re/Kontra - Kein Solo, Kein Bock, Keine Hochzeit
+          Normal Re/Kontra + Solo - Kein Bock, Keine Hochzeit
         </div>
 
         <button
@@ -326,23 +362,66 @@ export default function Home() {
                       
                       <div style={{ marginTop: '10px' }}>
                         <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>Rolle:</h4>
-                        {['geber', 're'].map(role => (
-                          <label key={role} style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
-                            <input
-                              type="radio"
-                              name={`role${i}`}
-                              value={role}
-                              checked={playerRoles[i] === role}
-                              onChange={(e) => {
-                                const newRoles = [...playerRoles];
-                                newRoles[i] = e.target.value;
-                                setPlayerRoles(newRoles);
-                              }}
-                              style={{ marginRight: '5px' }}
-                            />
-                            {role.charAt(0).toUpperCase() + role.slice(1)}
-                          </label>
-                        ))}
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                          <input
+                            type="radio"
+                            name="geber"
+                            checked={playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')}
+                            onChange={() => {
+                              const newRoles = [...playerRoles];
+                              // Alle anderen Geber entfernen
+                              for (let j = 0; j < newRoles.length; j++) {
+                                if (j !== i && (newRoles[j] === 'geber' || newRoles[j]?.startsWith('geber+'))) {
+                                  newRoles[j] = '';
+                                }
+                              }
+                              newRoles[i] = 'geber';
+                              setPlayerRoles(newRoles);
+                            }}
+                            style={{ marginRight: '5px' }}
+                          />
+                          Geber
+                        </label>
+                        
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                          <input
+                            type="checkbox"
+                            checked={playerRoles[i] === 're' || playerRoles[i] === 'geber+re'}
+                            disabled={playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+'))}
+                            onChange={(e) => {
+                              const newRoles = [...playerRoles];
+                              const isGeber = playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+');
+                              if (e.target.checked) {
+                                newRoles[i] = isGeber ? 'geber+re' : 're';
+                              } else {
+                                newRoles[i] = isGeber ? 'geber' : '';
+                              }
+                              setPlayerRoles(newRoles);
+                            }}
+                            style={{ marginRight: '5px' }}
+                          />
+                          Re {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && <span style={{ fontSize: '11px', color: '#999' }}>(Geber sitzt aus)</span>}
+                        </label>
+                        
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
+                          <input
+                            type="checkbox"
+                            checked={playerRoles[i] === 'solo' || playerRoles[i] === 'geber+solo'}
+                            disabled={playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+'))}
+                            onChange={(e) => {
+                              const newRoles = [...playerRoles];
+                              const isGeber = playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+');
+                              if (e.target.checked) {
+                                newRoles[i] = isGeber ? 'geber+solo' : 'solo';
+                              } else {
+                                newRoles[i] = isGeber ? 'geber' : '';
+                              }
+                              setPlayerRoles(newRoles);
+                            }}
+                            style={{ marginRight: '5px' }}
+                          />
+                          Solo {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && <span style={{ fontSize: '11px', color: '#999' }}>(Geber sitzt aus)</span>}
+                        </label>
                       </div>
                     </div>
                   ))}
