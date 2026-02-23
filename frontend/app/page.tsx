@@ -58,10 +58,12 @@ export default function Home() {
         setBockTotalInStreak(activeSpieltag.totalBockGamesInStreak || 0);
         
         const spieltagData = await api.getSpieltag(activeSpieltag.spieltagId);
-        setGames(spieltagData.games || []);
+        // Spiele nach gameNumber sortieren
+        const sortedGames = (spieltagData.games || []).sort((a, b) => a.gameNumber - b.gameNumber);
+        setGames(sortedGames);
         
-        if (spieltagData.games && spieltagData.games.length > 0) {
-          setNextDealerBasedOnLastGame(spieltagData.games, activeSpieltag.playerNames);
+        if (sortedGames.length > 0) {
+          setNextDealerBasedOnLastGame(sortedGames, activeSpieltag.playerNames);
         } else {
           const newRoles = new Array(activeSpieltag.playerNames.length).fill('');
           newRoles[0] = 'geber';
@@ -365,7 +367,8 @@ export default function Home() {
           });
 
           const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
-          setGames(spieltagData.games || []);
+          const sortedGames = (spieltagData.games || []).sort((a, b) => a.gameNumber - b.gameNumber);
+          setGames(sortedGames);
           
           setEditingGameId(null);
           setGameValue(null);
@@ -447,7 +450,8 @@ export default function Home() {
           });
 
           const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
-          setGames(spieltagData.games || []);
+          const sortedGames = (spieltagData.games || []).sort((a, b) => a.gameNumber - b.gameNumber);
+          setGames(sortedGames);
 
           // Bock-State aktualisieren (aus Referenz, Zeile 940-960)
           const newBockState = updateBockState(
@@ -537,10 +541,11 @@ export default function Home() {
         
         // Spiele neu laden
         const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
-        setGames(spieltagData.games || []);
+        const sortedGames = (spieltagData.games || []).sort((a, b) => a.gameNumber - b.gameNumber);
+        setGames(sortedGames);
         
         // Bock-State für ALLE Spiele neu berechnen (weil sich durch Edit etwas geändert haben könnte)
-        const newBockState = recalculateBockStateForAllGames(spieltagData.games || [], playerCount);
+        const newBockState = recalculateBockStateForAllGames(sortedGames, playerCount);
         setBockActive(newBockState.bockActive);
         setBockPlayedInStreak(newBockState.bockPlayedInStreak);
         setBockTotalInStreak(newBockState.bockTotalInStreak);
@@ -554,7 +559,8 @@ export default function Home() {
       }
 
       const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
-      setGames(spieltagData.games || []);
+      const sortedGames = (spieltagData.games || []).sort((a, b) => a.gameNumber - b.gameNumber);
+      setGames(sortedGames);
 
       if (!editingGameId) {
         // Nur bei neuem Spiel: Bock-State aktualisieren und Geber rotieren
