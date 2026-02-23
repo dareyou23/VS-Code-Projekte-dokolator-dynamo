@@ -630,9 +630,14 @@ export default function Home() {
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <h1 style={{ color: '#0056b3', margin: 0 }}>Dokolator - Vollversion</h1>
-          <Link href="/abrechnung" style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
-            💰 Abrechnung
-          </Link>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Link href="/grafik" style={{ padding: '10px 20px', backgroundColor: '#0056b3', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+              📊 Grafik
+            </Link>
+            <Link href="/abrechnung" style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+              💰 Abrechnung
+            </Link>
+          </div>
         </div>
         <div style={{ textAlign: 'center', fontSize: '14px', color: '#666', marginBottom: '20px' }}>
           {currentDate}
