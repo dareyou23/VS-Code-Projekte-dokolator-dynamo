@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
-import { calculateReKontraScores, getActivePlayers, updateBockState } from '@/lib/gameLogic';
+import { calculateReKontraScores, getActivePlayers, updateBockState, recalculateBockStateForAllGames } from '@/lib/gameLogic';
 import { calculateSoloScores } from '@/lib/soloLogic';
 import type { GameData, Spieltag } from '@/lib/types';
 
@@ -371,6 +371,12 @@ export default function Home() {
           setGameValue(null);
           setCustomGameValue('');
           setBockTrigger(false);
+          
+          // Bock-State für ALLE Spiele neu berechnen
+          const newBockState = recalculateBockStateForAllGames(spieltagData.games || [], playerCount);
+          setBockActive(newBockState.bockActive);
+          setBockPlayedInStreak(newBockState.bockPlayedInStreak);
+          setBockTotalInStreak(newBockState.bockTotalInStreak);
         } catch (error) {
           console.error('Fehler:', error);
           alert('Fehler beim Aktualisieren des Hochzeit-Spiels');
@@ -528,6 +534,16 @@ export default function Home() {
         });
         
         setEditingGameId(null);
+        
+        // Spiele neu laden
+        const spieltagData = await api.getSpieltag(currentSpieltag.spieltagId);
+        setGames(spieltagData.games || []);
+        
+        // Bock-State für ALLE Spiele neu berechnen (weil sich durch Edit etwas geändert haben könnte)
+        const newBockState = recalculateBockStateForAllGames(spieltagData.games || [], playerCount);
+        setBockActive(newBockState.bockActive);
+        setBockPlayedInStreak(newBockState.bockPlayedInStreak);
+        setBockTotalInStreak(newBockState.bockTotalInStreak);
       } else {
         // CREATE: Neues Spiel hinzufügen
         await api.addGame(currentSpieltag.spieltagId, {

@@ -132,3 +132,53 @@ export function formatBockDisplay(
   }
   return '-';
 }
+
+
+/**
+ * Berechnet Bock-State für alle Spiele neu
+ * Wird nach jedem Edit aufgerufen, um konsistenten Bock-State zu gewährleisten
+ */
+export function recalculateBockStateForAllGames(
+  games: any[],
+  playerCount: number
+): {
+  bockActive: number;
+  bockPlayedInStreak: number;
+  bockTotalInStreak: number;
+} {
+  let bockActive = 0;
+  let bockPlayedInStreak = 0;
+  let bockTotalInStreak = 0;
+  
+  // Sortiere Spiele nach gameNumber
+  const sortedGames = [...games].sort((a, b) => a.gameNumber - b.gameNumber);
+  
+  for (const game of sortedGames) {
+    // Überspringe Hochzeit-Suche (zählt nicht als Bockrunde)
+    if (game.hochzeitPhase === 'suche') {
+      continue;
+    }
+    
+    const isBockRound = bockActive > 0;
+    const triggerNewBockRound = game.bockTrigger || false;
+    
+    const newState = updateBockState(
+      bockActive,
+      bockPlayedInStreak,
+      bockTotalInStreak,
+      isBockRound,
+      triggerNewBockRound,
+      playerCount
+    );
+    
+    bockActive = newState.bockActive;
+    bockPlayedInStreak = newState.bockPlayedInStreak;
+    bockTotalInStreak = newState.bockTotalInStreak;
+  }
+  
+  return {
+    bockActive,
+    bockPlayedInStreak,
+    bockTotalInStreak
+  };
+}
