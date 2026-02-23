@@ -877,9 +877,9 @@ export default function Home() {
             {games.length > 0 && (
               <div style={{ marginBottom: '30px' }}>
                 <h2 style={{ color: '#0056b3', marginTop: '30px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>Spielverlauf</h2>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '15px' }}>
-                    <thead>
+                <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '600px', position: 'relative', border: '1px solid #ddd', borderRadius: '5px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '0' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f0f0f0' }}>
                       <tr style={{ backgroundColor: '#f0f0f0' }}>
                         <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Spiel #</th>
                         <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Spielwert</th>
@@ -1076,8 +1076,8 @@ export default function Home() {
                         const punktwert = currentSpieltag?.punktwert || 0.05;
                         
                         return (
-                          <tr style={{ backgroundColor: '#fff3cd', borderTop: '3px solid #ffc107' }}>
-                            <td colSpan={3} style={{ border: '1px solid #ddd', padding: '15px', fontWeight: 'bold', fontSize: '16px', color: '#856404' }}>
+                          <tr style={{ backgroundColor: '#fff3cd', borderTop: '3px solid #ffc107', position: 'sticky', bottom: 0, zIndex: 9 }}>
+                            <td colSpan={3} style={{ border: '1px solid #ddd', padding: '15px', fontWeight: 'bold', fontSize: '16px', color: '#856404', backgroundColor: '#fff3cd' }}>
                               💶 Zu zahlen
                             </td>
                             {playerNames.filter(n => n.trim()).map(name => {
@@ -1087,7 +1087,7 @@ export default function Home() {
                                 : tageseinsatz + ((maxPoints - points) * punktwert);
                               
                               return (
-                                <td key={name} style={{ border: '1px solid #ddd', padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '18px', color: '#0056b3' }}>
+                                <td key={name} style={{ border: '1px solid #ddd', padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '18px', color: '#0056b3', backgroundColor: '#fff3cd' }}>
                                   {payment.toFixed(2)} €
                                 </td>
                               );
