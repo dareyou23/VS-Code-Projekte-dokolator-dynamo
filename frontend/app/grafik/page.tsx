@@ -43,6 +43,10 @@ export default function Grafik() {
   const [currentSpieltag, setCurrentSpieltag] = useState<Spieltag | null>(null);
   const [games, setGames] = useState<GameData[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Abrechnungs-Werte
+  const [tageseinsatz, setTageseinsatz] = useState(15.00);
+  const [punktwert, setPunktwert] = useState(0.05);
 
   useEffect(() => {
     loadCurrentSpieltag();
@@ -55,6 +59,8 @@ export default function Grafik() {
       
       if (activeSpieltag) {
         setCurrentSpieltag(activeSpieltag);
+        setTageseinsatz(activeSpieltag.startgeld || 15.00);
+        setPunktwert(activeSpieltag.punktwert || 0.05);
         
         const spieltagData = await api.getSpieltag(activeSpieltag.spieltagId);
         const sortedGames = (spieltagData.games || []).sort((a: GameData, b: GameData) => a.gameNumber - b.gameNumber);
@@ -110,6 +116,36 @@ export default function Grafik() {
   };
 
   const { labels, playerData } = calculateChartData();
+  
+  // Berechne Zahlungen (wie in Abrechnung)
+  const calculatePayments = () => {
+    const payments: { [key: string]: number } = {};
+    
+    // Finde den Gewinner (höchste Punktzahl)
+    const finalPoints: { [key: string]: number } = {};
+    PLAYER_ORDER.forEach(name => {
+      finalPoints[name] = playerData[name][playerData[name].length - 1] || 0;
+    });
+    
+    const maxPoints = Math.max(...Object.values(finalPoints));
+    
+    PLAYER_ORDER.forEach(name => {
+      const points = finalPoints[name];
+      
+      if (points === maxPoints) {
+        // Gewinner zahlt nur den Sockelbetrag
+        payments[name] = tageseinsatz;
+      } else {
+        // Andere zahlen: Sockelbetrag + (Differenz zum Gewinner × Punktwert)
+        const differenz = maxPoints - points;
+        payments[name] = tageseinsatz + (differenz * punktwert);
+      }
+    });
+    
+    return payments;
+  };
+  
+  const payments = calculatePayments();
   
   // Chart.js Daten
   const chartData = {
@@ -203,17 +239,21 @@ export default function Grafik() {
               </div>
             </div>
 
-            {/* Legende mit aktuellen Punkten */}
+            {/* Legende mit aktuellen Punkten und Geldwerten */}
             <div style={{ backgroundColor: '#f8f9fa', padding: '20px', borderRadius: '8px', border: '2px solid #e9ecef' }}>
-              <h3 style={{ fontSize: '16px', marginBottom: '15px', color: '#495057' }}>📋 Aktuelle Punktestände</h3>
+              <h3 style={{ fontSize: '16px', marginBottom: '15px', color: '#495057' }}>📋 Aktuelle Punktestände & Zahlungen</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '15px' }}>
                 {PLAYER_ORDER.map(name => {
                   const currentPoints = playerData[name][playerData[name].length - 1];
+                  const payment = payments[name];
                   return (
                     <div key={name} style={{ textAlign: 'center', padding: '15px', backgroundColor: 'white', borderRadius: '5px', border: `3px solid ${PLAYER_COLORS[name]}` }}>
-                      <div style={{ fontSize: '14px', color: '#6c757d', marginBottom: '5px' }}>{name}</div>
-                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: currentPoints >= 0 ? '#28a745' : '#dc3545' }}>
+                      <div style={{ fontSize: '14px', color: '#6c757d', marginBottom: '5px', fontWeight: 'bold' }}>{name}</div>
+                      <div style={{ fontSize: '24px', fontWeight: 'bold', color: currentPoints >= 0 ? '#28a745' : '#dc3545', marginBottom: '8px' }}>
                         {currentPoints >= 0 ? '+' : ''}{currentPoints}
+                      </div>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0056b3', borderTop: '2px solid #e9ecef', paddingTop: '8px' }}>
+                        {payment.toFixed(2)} €
                       </div>
                     </div>
                   );

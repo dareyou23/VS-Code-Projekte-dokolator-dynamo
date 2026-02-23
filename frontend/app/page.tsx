@@ -1059,6 +1059,43 @@ export default function Home() {
                           </tr>
                         );
                       })}
+                      
+                      {/* Zahlungs-Zeile am Ende */}
+                      {games.length > 0 && (() => {
+                        // Berechne finale Punkte
+                        const finalPoints: { [key: string]: number } = {};
+                        playerNames.filter(n => n.trim()).forEach(name => {
+                          finalPoints[name] = games.reduce((sum, game) => {
+                            return sum + (game.players[name]?.points || 0);
+                          }, 0);
+                        });
+                        
+                        // Berechne Zahlungen
+                        const maxPoints = Math.max(...Object.values(finalPoints));
+                        const tageseinsatz = currentSpieltag?.startgeld || 15.00;
+                        const punktwert = currentSpieltag?.punktwert || 0.05;
+                        
+                        return (
+                          <tr style={{ backgroundColor: '#fff3cd', borderTop: '3px solid #ffc107' }}>
+                            <td colSpan={3} style={{ border: '1px solid #ddd', padding: '15px', fontWeight: 'bold', fontSize: '16px', color: '#856404' }}>
+                              💶 Zu zahlen
+                            </td>
+                            {playerNames.filter(n => n.trim()).map(name => {
+                              const points = finalPoints[name] || 0;
+                              const payment = points === maxPoints 
+                                ? tageseinsatz 
+                                : tageseinsatz + ((maxPoints - points) * punktwert);
+                              
+                              return (
+                                <td key={name} style={{ border: '1px solid #ddd', padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '18px', color: '#0056b3' }}>
+                                  {payment.toFixed(2)} €
+                                </td>
+                              );
+                            })}
+                            <td style={{ border: '1px solid #ddd', padding: '15px' }}></td>
+                          </tr>
+                        );
+                      })()}
                     </tbody>
                   </table>
                 </div>
