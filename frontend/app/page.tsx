@@ -1092,7 +1092,17 @@ export default function Home() {
                                 </td>
                               );
                             })}
-                            <td style={{ border: '1px solid #ddd', padding: '15px' }}></td>
+                            <td style={{ border: '1px solid #ddd', padding: '15px', textAlign: 'center', backgroundColor: '#ffc107' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#856404', marginBottom: '3px' }}>Gesamt</div>
+                              <div style={{ fontWeight: 'bold', fontSize: '20px', color: '#0056b3' }}>
+                                {Object.values(finalPoints).reduce((sum, points) => {
+                                  const payment = points === maxPoints 
+                                    ? tageseinsatz 
+                                    : tageseinsatz + ((maxPoints - points) * punktwert);
+                                  return sum + payment;
+                                }, 0).toFixed(2)} €
+                              </div>
+                            </td>
                           </tr>
                         );
                       })()}
