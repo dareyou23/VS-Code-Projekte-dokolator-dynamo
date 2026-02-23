@@ -649,13 +649,15 @@ export default function Home() {
                 </div>
 
                 <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#fff9e6' }}>
-                  <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>Bockrunde:</h3>
-                  {bockActive > 0 && (
-                    <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#ffe6e6', borderRadius: '4px', fontWeight: 'bold', color: '#d32f2f' }}>
-                      ⚠️ Bockrunde aktiv: {bockPlayedInStreak + 1}/{bockTotalInStreak} (noch {bockActive} Spiele)
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                      <h3 style={{ fontSize: '16px', margin: 0 }}>Bockrunde:</h3>
+                      {bockActive > 0 && (
+                        <div style={{ padding: '8px 12px', backgroundColor: '#ffe6e6', borderRadius: '4px', fontWeight: 'bold', color: '#d32f2f', fontSize: '14px' }}>
+                          ⚠️ Aktiv: {bockPlayedInStreak + 1}/{bockTotalInStreak} (noch {bockActive} Spiele)
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button
                       type="button"
                       onClick={() => setBockTrigger(!bockTrigger)}
