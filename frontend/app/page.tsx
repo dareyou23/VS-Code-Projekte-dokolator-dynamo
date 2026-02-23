@@ -649,17 +649,24 @@ export default function Home() {
                       ⚠️ Bockrunde aktiv: {bockPlayedInStreak + 1}/{bockTotalInStreak} (noch {bockActive} Spiele)
                     </div>
                   )}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={bockTrigger}
-                      onChange={(e) => setBockTrigger(e.target.checked)}
-                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                    />
-                    <span style={{ fontSize: '14px' }}>
-                      Bockrunde auslösen (fügt {playerNames.filter(n => n.trim()).length} neue Bockrunden hinzu)
-                    </span>
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setBockTrigger(!bockTrigger)}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      backgroundColor: bockTrigger ? '#d32f2f' : '#ff9800',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      fontSize: '15px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s'
+                    }}
+                  >
+                    {bockTrigger ? '✓ Bockrunde wird ausgelöst' : 'Bockrunde auslösen'} ({playerNames.filter(n => n.trim()).length} Spiele)
+                  </button>
                 </div>
 
                 <button type="submit" style={{ width: '100%', padding: '15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
