@@ -499,9 +499,45 @@ export default function Home() {
                             <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameValue}</td>
                             {playerNames.filter(n => n.trim()).map(name => {
                               const cumulative = cumulativeScores[name] || 0;
+                              const playerData = game.players[name];
+                              const roles = playerData?.roles || [];
+                              
+                              // Rolle ermitteln (aus Referenz, Zeile 656-680)
+                              let roleChar = '-';
+                              let bgColor = '#fff';
+                              
+                              if (roles.includes('geber') || roles.includes('geber+re') || roles.includes('geber+solo') || roles.includes('geber+hochzeit')) {
+                                // Bei 5 Spielern sitzt Geber aus
+                                if (playerCount === 5 && playerData.points === 0) {
+                                  roleChar = '⌀';
+                                  bgColor = '#f8f9fa';
+                                } else {
+                                  roleChar = 'G';
+                                  bgColor = '#fff0e6';
+                                }
+                              }
+                              
+                              if (roles.includes('solo') || roles.includes('geber+solo')) {
+                                roleChar = 'S';
+                                bgColor = '#ffe6e6';
+                              } else if (roles.includes('re') || roles.includes('geber+re')) {
+                                roleChar = 'R';
+                                bgColor = '#e6f7ff';
+                              } else if (roles.includes('hochzeit') || roles.includes('geber+hochzeit')) {
+                                roleChar = 'H';
+                                bgColor = '#fff0e6';
+                              } else if (playerData && playerData.points !== 0 && roleChar === '-') {
+                                // Kontra (aktiver Spieler ohne spezielle Rolle)
+                                roleChar = 'K';
+                                bgColor = '#fff0e6';
+                              }
+                              
                               return (
-                                <td key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', fontWeight: 'bold', color: cumulative >= 0 ? '#28a745' : '#dc3545' }}>
-                                  {cumulative >= 0 ? '+' : ''}{cumulative}
+                                <td key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', backgroundColor: bgColor }}>
+                                  <span style={{ fontWeight: 'normal', marginRight: '5px' }}>{roleChar}</span>
+                                  <span style={{ fontWeight: 'bold', color: cumulative >= 0 ? '#28a745' : '#dc3545' }}>
+                                    {cumulative >= 0 ? '+' : ''}{cumulative}
+                                  </span>
                                 </td>
                               );
                             })}
