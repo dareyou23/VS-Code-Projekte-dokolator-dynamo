@@ -956,6 +956,11 @@ export default function Home() {
                           bockDisplay = `${tempState.playedInStreak + 1}/${tempState.totalInStreak}`;
                         }
                         
+                        // Wenn dieses Spiel einen Bock-Trigger hat, zeige "Trigger"
+                        if (game.bockTrigger) {
+                          bockDisplay = 'Trigger';
+                        }
+                        
                         return (
                           <tr key={game.gameId || `${game.gameNumber}-${gameIndex}`}>
                             <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameNumber}</td>
