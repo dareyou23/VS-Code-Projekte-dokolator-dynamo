@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import type { GameData, Spieltag } from '@/lib/types';
 
 // Feste Spieler-Reihenfolge für Abrechnung
@@ -106,8 +107,9 @@ export default function Abrechnung() {
   }
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333', minHeight: '100vh' }}>
-      <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1000px', margin: '0 auto' }}>
+    <ProtectedRoute allowedRoles={['admin', 'user']}>
+      <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333', minHeight: '100vh' }}>
+        <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1000px', margin: '0 auto' }}>
         
         {/* Header mit Navigation */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
@@ -363,5 +365,6 @@ export default function Abrechnung() {
         )}
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

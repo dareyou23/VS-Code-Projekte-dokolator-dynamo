@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import type { Spieltag, GameData } from '@/lib/types';
 
 const STANDARD_PLAYERS = ['Benno', 'Bernd', 'Gregor', 'Markus', 'Peter'];
@@ -101,17 +102,18 @@ export default function RollenHistoriePage() {
   }
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
-      <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1400px', margin: '0 auto' }}>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 style={{ color: '#0056b3', margin: 0 }}>🎭 Rollen-Historie</h1>
-          <Link href="/" style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
-            ← Zurück
-          </Link>
-        </div>
+    <ProtectedRoute allowedRoles={['admin', 'user']}>
+      <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
+        <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1400px', margin: '0 auto' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h1 style={{ color: '#0056b3', margin: 0 }}>🎭 Rollen-Historie</h1>
+            <Link href="/" style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+              ← Zurück
+            </Link>
+          </div>
 
-        {spieltage.length === 0 ? (
+          {spieltage.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
             <p style={{ fontSize: '18px' }}>Noch keine Spieltage mit Standard-Spielern vorhanden</p>
           </div>
@@ -299,5 +301,6 @@ export default function RollenHistoriePage() {
         )}
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

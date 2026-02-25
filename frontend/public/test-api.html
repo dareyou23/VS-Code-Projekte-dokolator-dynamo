@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Dokolator API Test</h1>
+    
+    <button onclick="testDirectFetch()">Test 1: Direct Fetch</button>
+    <button onclick="testWithConsoleLog()">Test 2: With Console Logging</button>
+    <button onclick="testResponseType()">Test 3: Check Response Type</button>
+    
+    <h2>Results:</h2>
+    <pre id="result"></pre>
+
+    <script>
+        const API_URL = 'https://x6qfjkcjzj.execute-api.eu-central-1.amazonaws.com/Prod/auth/login';
+        const TEST_EMAIL = 'traudichbox@googlemail.com';
+        const TEST_PASSWORD = 'Doko2024!';
+
+        function log(message, isError = false) {
+            const resultEl = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = isError ? 'error' : 'success';
+            resultEl.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            console.log(message);
+        }
+
+        async function testDirectFetch() {
+            log('=== Test 1: Direct Fetch ===');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD })
+                });
+                
+                log(`Status: ${response.status} ${response.statusText}`);
+                log(`Headers: ${JSON.stringify([...response.headers.entries()])}`);
+                
+                const text = await response.text();
+                log(`Raw Response: ${text}`);
+                
+                const data = JSON.parse(text);
+                log(`Parsed Data: ${JSON.stringify(data, null, 2)}`);
+                
+                if (data.success && data.data && data.data.accessToken) {
+                    log('✅ Login successful!');
+                } else {
+                    log('❌ Unexpected response structure', true);
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+                log(`Stack: ${error.stack}`, true);
+            }
+        }
+
+        async function testWithConsoleLog() {
+            log('=== Test 2: With Console Logging ===');
+            try {
+                console.log('Starting fetch...');
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD })
+                });
+                
+                console.log('Response received:', response);
+                console.log('Response ok:', response.ok);
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Data parsed:', data);
+                
+                log(`Console logged - check browser console for details`);
+                log(`Data: ${JSON.stringify(data, null, 2)}`);
+            } catch (error) {
+                console.error('Error:', error);
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+
+        async function testResponseType() {
+            log('=== Test 3: Check Response Type ===');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: TEST_EMAIL, password: TEST_PASSWORD })
+                });
+                
+                log(`Response type: ${response.type}`);
+                log(`Response redirected: ${response.redirected}`);
+                log(`Response url: ${response.url}`);
+                log(`Content-Type: ${response.headers.get('content-type')}`);
+                
+                const clone = response.clone();
+                const text = await response.text();
+                log(`Text length: ${text.length}`);
+                log(`First 100 chars: ${text.substring(0, 100)}`);
+                
+                const data = await clone.json();
+                log(`JSON parsed successfully: ${!!data}`);
+                log(`Has success field: ${!!data.success}`);
+                log(`Has data field: ${!!data.data}`);
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>

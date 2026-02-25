@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { getUserIdFromToken } from '../utils/auth';
 import { Game, Spieltag, PlayerStats } from '../types/game';
 
 const client = new DynamoDBClient({});
@@ -28,9 +29,9 @@ const getHttpMethod = (event: any): string => {
   return event.requestContext?.http?.method || event.httpMethod || 'GET';
 };
 
-// Helper: Extract User ID from Cognito token
+// Helper: Extract User ID from JWT token
 const getUserIdFromEvent = (event: APIGatewayProxyEvent): string | null => {
-  return event.headers['x-user-id'] || 'default-user';
+  return getUserIdFromToken(event);
 };
 
 /**

@@ -1,7 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { Spieltag, Game } from '../types/game';
+import { getUserIdFromToken } from '../utils/auth';
+
+const lambdaClient = new LambdaClient({});
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
@@ -28,11 +32,9 @@ const getHttpMethod = (event: any): string => {
   return event.requestContext?.http?.method || event.httpMethod || 'GET';
 };
 
-// Helper: Extract User ID from Cognito token
+// Helper: Extract User ID from JWT token
 const getUserIdFromEvent = (event: APIGatewayProxyEvent): string | null => {
-  // TODO: Extract from Cognito authorizer context
-  // For now, use header or default
-  return event.headers['x-user-id'] || event.headers['X-User-Id'] || 'default-user';
+  return getUserIdFromToken(event);
 };
 
 /**
@@ -73,9 +75,26 @@ export const createSpieltag = async (event: APIGatewayProxyEvent): Promise<APIGa
         PK: `USER#${userId}`,
         SK: `SPIELTAG#${spieltag.spieltagId}`,
         ...spieltag,
-        entityType: 'SPIELTAG'
+        entityType: 'SPIELTAG',
+        GSI1PK: 'SPIELTAG',
+        GSI1SK: spieltag.createdAt
       }
     }));
+
+    // Trigger backup asynchronously (don't wait for it)
+    if (process.env.BACKUP_FUNCTION_NAME) {
+      lambdaClient.send(new InvokeCommand({
+        FunctionName: process.env.BACKUP_FUNCTION_NAME,
+        InvocationType: 'Event', // Async invocation
+        Payload: Buffer.from(JSON.stringify({ 
+          source: 'spieltag.created',
+          spieltagId: spieltag.spieltagId 
+        }))
+      })).catch(err => {
+        console.error('Failed to trigger backup:', err);
+        // Don't fail the request if backup trigger fails
+      });
+    }
 
     return {
       statusCode: 201,

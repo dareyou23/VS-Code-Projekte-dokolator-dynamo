@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import Link from 'next/link';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import type { Spieltag, GameData } from '@/lib/types';
 
 const STANDARD_PLAYERS = ['Benno', 'Bernd', 'Gregor', 'Markus', 'Peter'];
@@ -24,19 +25,30 @@ export default function HistoriePage() {
 
   const loadSpieltage = async () => {
     try {
+      console.log('=== loadSpieltage START ===');
+      
       const data = await api.listSpieltage();
-      console.log('Geladene Spieltage:', data);
+      console.log('API Response:', data);
+      
+      if (!data || !data.spieltage) {
+        console.error('No spieltage data');
+        return;
+      }
+      
+      console.log('Spieltage array:', data.spieltage);
+      console.log('Anzahl Spieltage:', data.spieltage?.length || 0);
       
       // Nur Spieltage mit den Standard-Spielern anzeigen
       const filteredSpieltage = (data.spieltage || []).filter((spieltag: Spieltag) => {
         const hasCorrectPlayers = spieltag.playerNames && 
                                   spieltag.playerNames.length === 5 && 
                                   spieltag.playerNames.every(name => STANDARD_PLAYERS.includes(name));
-        console.log(`Spieltag ${spieltag.spieltagId}: Spieler=${spieltag.playerNames}, Filter=${hasCorrectPlayers}`);
+        console.log(`Spieltag ${spieltag.spieltagId}: Spieler=${JSON.stringify(spieltag.playerNames)}, Filter=${hasCorrectPlayers}`);
         return hasCorrectPlayers;
       });
       
       console.log('Gefilterte Spieltage:', filteredSpieltage.length);
+      console.log('=== loadSpieltage END ===');
       
       // Nach Datum sortieren (neueste zuerst)
       const sortedSpieltage = filteredSpieltage.sort((a: Spieltag, b: Spieltag) => {
@@ -47,9 +59,13 @@ export default function HistoriePage() {
       const spieltageWithGames = await Promise.all(
         sortedSpieltage.map(async (spieltag) => {
           try {
-            const spieltagData = await api.getSpieltag(spieltag.spieltagId);
-            console.log(`Spiele für ${spieltag.spieltagId}:`, spieltagData.games?.length || 0);
-            return { ...spieltag, games: spieltagData.games || [] };
+            const response = await apiClient.getSpieltag(spieltag.spieltagId);
+            if (response.success && response.data) {
+              const spieltagData = response.data as any;
+              console.log(`Spiele für ${spieltag.spieltagId}:`, spieltagData.games?.length || 0);
+              return { ...spieltag, games: spieltagData.games || [] };
+            }
+            return { ...spieltag, games: [] };
           } catch (error) {
             console.error(`Fehler beim Laden von Spieltag ${spieltag.spieltagId}:`, error);
             return { ...spieltag, games: [] };
@@ -107,7 +123,7 @@ export default function HistoriePage() {
     
     try {
       // In DynamoDB speichern
-      await api.updateEntnahme(spieltagId, value);
+      await apiClient.updateEntnahme(spieltagId, value);
       
       // Lokalen State aktualisieren
       setSpieltage(prev => {
@@ -132,21 +148,24 @@ export default function HistoriePage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f4f4' }}>
-        <div style={{ fontSize: '20px', color: '#666' }}>Lade Historie...</div>
-      </div>
+      <ProtectedRoute allowedRoles={['admin', 'user']}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f4f4' }}>
+          <div style={{ fontSize: '20px', color: '#666' }}>Lade Historie...</div>
+        </div>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
-      <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1400px', margin: '0 auto' }}>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h1 style={{ color: '#0056b3', margin: 0 }}>Spieltag-Historie</h1>
-          <Link href="/" style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
-            ← Zurück
-          </Link>
+    <ProtectedRoute allowedRoles={['admin', 'user']}>
+      <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
+        <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1400px', margin: '0 auto' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h1 style={{ color: '#0056b3', margin: 0 }}>Spieltag-Historie</h1>
+            <Link href="/" style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
+              ← Zurück
+            </Link>
         </div>
 
         {spieltage.length === 0 ? (
@@ -346,5 +365,6 @@ export default function HistoriePage() {
         )}
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

@@ -1,31 +1,43 @@
-import { CognitoIdentityProviderClient, GetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
+import { APIGatewayTokenAuthorizerEvent, APIGatewayAuthorizerResult } from 'aws-lambda';
+import jwt from 'jsonwebtoken';
 
-const cognitoClient = new CognitoIdentityProviderClient({});
+interface JWTPayload {
+  userId: string;
+  email: string;
+  rolle: string;
+}
 
-export const handler = async (event: any) => {
+export async function handler(event: APIGatewayTokenAuthorizerEvent): Promise<APIGatewayAuthorizerResult> {
   try {
-    const token = event.headers?.authorization?.replace('Bearer ', '');
+    const token = event.authorizationToken?.replace('Bearer ', '');
     
     if (!token) {
-      return {
-        isAuthorized: false
-      };
+      throw new Error('No token provided');
     }
 
-    // Verify token with Cognito
-    const command = new GetUserCommand({
-      AccessToken: token
-    });
-
-    await cognitoClient.send(command);
-
+    const jwtSecret = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
+    
     return {
-      isAuthorized: true
+      principalId: decoded.userId,
+      policyDocument: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Action: 'execute-api:Invoke',
+            Effect: 'Allow',
+            Resource: event.methodArn
+          }
+        ]
+      },
+      context: {
+        userId: decoded.userId,
+        email: decoded.email,
+        rolle: decoded.rolle
+      }
     };
   } catch (error) {
     console.error('Authorization error:', error);
-    return {
-      isAuthorized: false
-    };
+    throw new Error('Unauthorized');
   }
-};
+}

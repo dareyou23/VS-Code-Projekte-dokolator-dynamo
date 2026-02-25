@@ -100,24 +100,32 @@ Resources:
             RestApiId: !Ref DokolatorApi
             Path: /auth/login
             Method: post
+            Auth:
+              Authorizer: NONE
         Logout:
           Type: Api
           Properties:
             RestApiId: !Ref DokolatorApi
             Path: /auth/logout
             Method: post
+            Auth:
+              Authorizer: NONE
         Refresh:
           Type: Api
           Properties:
             RestApiId: !Ref DokolatorApi
             Path: /auth/refresh
             Method: post
+            Auth:
+              Authorizer: NONE
         ResetPassword:
           Type: Api
           Properties:
             RestApiId: !Ref DokolatorApi
             Path: /auth/reset-password
             Method: post
+            Auth:
+              Authorizer: NONE
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -201,11 +209,6 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref GamesTable
-        - LambdaInvokePolicy:
-            FunctionName: !Ref BackupFunction
-      Environment:
-        Variables:
-          BACKUP_FUNCTION_NAME: !Ref BackupFunction
       Events:
         CreateSpieltag:
           Type: Api
@@ -429,40 +432,6 @@ Resources:
         Sourcemap: false
         EntryPoints:
           - src/handlers/game.ts
-        External:
-          - "@aws-sdk/*"
-
-  # Lambda: Automatic Backup
-  BackupFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: backup.handler
-      Timeout: 60
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref GamesTable
-        - Statement:
-          - Effect: Allow
-            Action:
-              - dynamodb:CreateBackup
-              - dynamodb:ListBackups
-              - dynamodb:DeleteBackup
-            Resource: !GetAtt GamesTable.Arn
-      Events:
-        ScheduledBackup:
-          Type: Schedule
-          Properties:
-            Schedule: rate(2 hours)
-            Description: Check for activity every 2 hours and create temp backups or permanent backup after 3h inactivity
-            Enabled: true
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: false
-        Target: es2020
-        Sourcemap: false
-        EntryPoints:
-          - src/handlers/backup.ts
         External:
           - "@aws-sdk/*"
 

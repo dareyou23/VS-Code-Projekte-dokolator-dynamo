@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { useAuth } from '@/lib/useAuth';
 import { calculateReKontraScores, getActivePlayers, updateBockState, recalculateBockStateForAllGames } from '@/lib/gameLogic';
 import { calculateSoloScores } from '@/lib/soloLogic';
 import type { GameData, Spieltag } from '@/lib/types';
@@ -10,10 +12,12 @@ import type { GameData, Spieltag } from '@/lib/types';
 const GAME_VALUES = [8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8];
 
 export default function Home() {
+  const { currentUser, logout } = useAuth();
   const [currentDate, setCurrentDate] = useState('');
   const [currentSpieltag, setCurrentSpieltag] = useState<Spieltag | null>(null);
   const [games, setGames] = useState<GameData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   
   const [playerCount, setPlayerCount] = useState(5);
   const [playerNames, setPlayerNames] = useState<string[]>(['Gregor', 'Bernd', 'Benno', 'Peter', 'Markus']);
@@ -625,46 +629,301 @@ export default function Home() {
   }
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
-      <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1200px', margin: '0 auto' }}>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <h1 style={{ color: '#0056b3', margin: 0 }}>Dokolator - Vollversion</h1>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Link href="/historie" style={{ padding: '10px 20px', backgroundColor: '#6f42c1', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
-              📜 Historie
-            </Link>
-            <Link href="/rollen-historie" style={{ padding: '10px 20px', backgroundColor: '#fd7e14', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
-              🎭 Rollen
-            </Link>
-            <Link href="/grafik" style={{ padding: '10px 20px', backgroundColor: '#0056b3', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
-              📊 Grafik
-            </Link>
-            <Link href="/abrechnung" style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', textDecoration: 'none', borderRadius: '5px', fontSize: '14px', fontWeight: 'bold' }}>
-              💰 Abrechnung
-            </Link>
+    <ProtectedRoute allowedRoles={['admin', 'user']}>
+      <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
+        <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1200px', margin: '0 auto' }}>
+          
+          {/* Header mit Hamburger-Menü */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <img src="/Doko-Runde.png" alt="Doko-Runde" style={{ width: '60px', height: 'auto' }} />
+              <h1 style={{ color: '#0056b3', margin: 0 }}>Dokolator V3 Beta</h1>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px', fontSize: '12px', textAlign: 'right' }}>
+                <div style={{ fontWeight: 'bold' }}>{currentUser?.email}</div>
+                <div style={{ color: '#666', fontSize: '11px' }}>{currentUser?.rolle === 'admin' ? '👑 Admin' : '👤 User'}</div>
+              </div>
+              
+              {/* Hamburger Button */}
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#0056b3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  lineHeight: '1'
+                }}
+              >
+                ☰
+              </button>
+            </div>
           </div>
-        </div>
-        <div style={{ textAlign: 'center', fontSize: '14px', color: '#666', marginBottom: '20px' }}>
-          {currentDate}
-        </div>
-        <div style={{ textAlign: 'center', fontSize: '12px', color: '#999', marginBottom: '20px' }}>
-          Normal Re/Kontra + Solo + Hochzeit + Bock
-        </div>
 
-        <button
-          onClick={handleNewGameDay}
-          style={{
-            display: 'block',
-            width: 'auto',
-            margin: '0 auto 25px auto',
-            padding: '10px 15px',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            fontSize: '16px',
-            cursor: 'pointer'
+          {/* Overlay Menu */}
+          {menuOpen && (
+            <>
+              {/* Backdrop */}
+              <div
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  zIndex: 999
+                }}
+              />
+              
+              {/* Sidebar Menu */}
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '300px',
+                  backgroundColor: '#fff',
+                  boxShadow: '-2px 0 10px rgba(0,0,0,0.2)',
+                  zIndex: 1000,
+                  padding: '20px',
+                  overflowY: 'auto'
+                }}
+              >
+                {/* Close Button */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                  <h2 style={{ margin: 0, color: '#0056b3' }}>Menü</h2>
+                  <button
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      fontSize: '18px',
+                      cursor: 'pointer',
+                      lineHeight: '1'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Menu Items */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <Link
+                    href="/historie"
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>📜</span>
+                    <span>Historie</span>
+                  </Link>
+
+                  <Link
+                    href="/rollen-historie"
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>🎭</span>
+                    <span>Rollen-Historie</span>
+                  </Link>
+
+                  <Link
+                    href="/grafik"
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>📊</span>
+                    <span>Grafik</span>
+                  </Link>
+
+                  <Link
+                    href="/abrechnung"
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>💰</span>
+                    <span>Abrechnung</span>
+                  </Link>
+
+                  <Link
+                    href="/passwort-aendern"
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>🔑</span>
+                    <span>Passwort ändern</span>
+                  </Link>
+
+                  {/* Divider */}
+                  <div style={{ height: '1px', backgroundColor: '#dee2e6', margin: '10px 0' }} />
+
+                  {/* Admin-only items */}
+                  {currentUser?.rolle === 'admin' && (
+                    <>
+                      <Link
+                        href="/admin"
+                        onClick={() => setMenuOpen(false)}
+                        style={{
+                          padding: '15px',
+                          backgroundColor: '#f8f9fa',
+                          color: '#333',
+                          textDecoration: 'none',
+                          borderRadius: '5px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          border: '1px solid #dee2e6'
+                        }}
+                      >
+                        <span style={{ fontSize: '20px' }}>👑</span>
+                        <span>Admin-Verwaltung</span>
+                      </Link>
+
+                      <Link
+                        href="/users"
+                        onClick={() => setMenuOpen(false)}
+                        style={{
+                          padding: '15px',
+                          backgroundColor: '#f8f9fa',
+                          color: '#333',
+                          textDecoration: 'none',
+                          borderRadius: '5px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          border: '1px solid #dee2e6'
+                        }}
+                      >
+                        <span style={{ fontSize: '20px' }}>👥</span>
+                        <span>User-Verwaltung</span>
+                      </Link>
+
+                      {/* Divider */}
+                      <div style={{ height: '1px', backgroundColor: '#dee2e6', margin: '10px 0' }} />
+                    </>
+                  )}
+
+                  {/* Logout Button */}
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      logout();
+                    }}
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>🚪</span>
+                    <span>Abmelden</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+          <div style={{ textAlign: 'center', fontSize: '14px', color: '#666', marginBottom: '20px' }}>
+            {currentDate}
+          </div>
+          <div style={{ textAlign: 'center', fontSize: '12px', color: '#999', marginBottom: '20px' }}>
+            Normal Re/Kontra + Solo + Hochzeit + Bock
+          </div>
+
+          <button
+            onClick={handleNewGameDay}
+            style={{
+              display: 'block',
+              width: 'auto',
+              margin: '0 auto 25px auto',
+              padding: '10px 15px',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              fontSize: '16px',
+              cursor: 'pointer'
           }}
         >
           Neuen Spieltag starten
@@ -1121,5 +1380,6 @@ export default function Home() {
         )}
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
