@@ -23,6 +23,7 @@ export default function Home() {
   const [playerNames, setPlayerNames] = useState<string[]>(['Gregor', 'Bernd', 'Benno', 'Peter', 'Markus']);
   const [playerRoles, setPlayerRoles] = useState<string[]>(['geber', '', '', '', '']);
   const [gameValue, setGameValue] = useState<number | null>(null);
+  const [customGameValue, setCustomGameValue] = useState('');
   const [bockTrigger, setBockTrigger] = useState(false);
   
   // Edit-State
@@ -171,6 +172,7 @@ export default function Home() {
     
     // Spielwert setzen
     setGameValue(game.gameValue);
+    setCustomGameValue('');
     
     // Bock-Trigger setzen
     setBockTrigger(game.bockTrigger);
@@ -182,6 +184,7 @@ export default function Home() {
   const cancelEdit = () => {
     setEditingGameId(null);
     setGameValue(null);
+    setCustomGameValue('');
     setBockTrigger(false);
   };
 
@@ -373,6 +376,7 @@ export default function Home() {
           
           setEditingGameId(null);
           setGameValue(null);
+          setCustomGameValue('');
           setBockTrigger(false);
           
           // Bock-State für ALLE Spiele neu berechnen
@@ -477,6 +481,7 @@ export default function Home() {
           
           // Spielwert und Bock-Trigger zurücksetzen
           setGameValue(null);
+          setCustomGameValue('');
           setBockTrigger(false);
         } catch (error) {
           console.error('Fehler:', error);
@@ -587,6 +592,7 @@ export default function Home() {
       
       // Spielwert und Bock-Trigger zurücksetzen
       setGameValue(null);
+      setCustomGameValue('');
       setBockTrigger(false);
     } catch (error) {
       console.error('Fehler:', error);
@@ -616,49 +622,43 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <div className="text-xl text-gray-600">Lade...</div>
-        </div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f4f4' }}>
+        <div style={{ fontSize: '20px', color: '#666' }}>Lade...</div>
       </div>
     );
   }
 
   return (
     <ProtectedRoute allowedRoles={['admin', 'user']}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4 md:p-6">
-        <div className="bg-white rounded-2xl shadow-xl max-w-7xl mx-auto p-6 md:p-8">
+      <div style={{ fontFamily: 'Arial, sans-serif', margin: '20px', backgroundColor: '#f4f4f4', color: '#333' }}>
+        <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '1200px', margin: '0 auto' }}>
           
-          {/* Header mit Logo, Titel, Button und Hamburger */}
-          <div className="flex items-start justify-between mb-6 gap-4">
-            {/* Logo linksbündig - 3x größer */}
-            <img src="/Doko-Runde.png" alt="Doko-Runde" className="w-48 h-auto md:w-60 lg:w-72" />
-            
-            {/* Titel + Button zentral */}
-            <div className="flex-1 flex flex-col items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                Dokolator V3 Beta
-              </h1>
-              <button
-                onClick={handleNewGameDay}
-                className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                Neuen Spieltag starten
-              </button>
+          {/* Header mit Hamburger-Menü */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <img src="/Doko-Runde.png" alt="Doko-Runde" style={{ width: '60px', height: 'auto' }} />
+              <h1 style={{ color: '#0056b3', margin: 0 }}>Dokolator V3 Beta</h1>
             </div>
             
-            {/* User Info + Hamburger rechts */}
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:block bg-gray-50 rounded-lg px-4 py-2 text-sm text-right border border-gray-200">
-                <div className="font-semibold text-gray-800">{currentUser?.email}</div>
-                <div className="text-xs text-gray-500">{currentUser?.rolle === 'admin' ? '👑 Admin' : '👤 User'}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px', fontSize: '12px', textAlign: 'right' }}>
+                <div style={{ fontWeight: 'bold' }}>{currentUser?.email}</div>
+                <div style={{ color: '#666', fontSize: '11px' }}>{currentUser?.rolle === 'admin' ? '👑 Admin' : '👤 User'}</div>
               </div>
               
               {/* Hamburger Button */}
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="p-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg text-2xl transition-all duration-200 shadow-md hover:shadow-lg"
+                style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#0056b3',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  lineHeight: '1'
+                }}
               >
                 ☰
               </button>
@@ -671,71 +671,161 @@ export default function Home() {
               {/* Backdrop */}
               <div
                 onClick={() => setMenuOpen(false)}
-                className="fixed inset-0 bg-black bg-opacity-50 z-[999]"
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  zIndex: 999
+                }}
               />
               
               {/* Sidebar Menu */}
-              <div className="fixed top-0 right-0 bottom-0 w-80 bg-white shadow-2xl z-[1000] p-6 overflow-y-auto">
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '300px',
+                  backgroundColor: '#fff',
+                  boxShadow: '-2px 0 10px rgba(0,0,0,0.2)',
+                  zIndex: 1000,
+                  padding: '20px',
+                  overflowY: 'auto'
+                }}
+              >
                 {/* Close Button */}
-                <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-2xl font-bold text-blue-600">Menü</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                  <h2 style={{ margin: 0, color: '#0056b3' }}>Menü</h2>
                   <button
                     onClick={() => setMenuOpen(false)}
-                    className="p-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xl transition-colors"
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      fontSize: '18px',
+                      cursor: 'pointer',
+                      lineHeight: '1'
+                    }}
                   >
                     ✕
                   </button>
                 </div>
 
                 {/* Menu Items */}
-                <div className="flex flex-col gap-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <Link
                     href="/historie"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-200 transition-all duration-200 hover:shadow-md"
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
                   >
-                    <span className="text-2xl">📜</span>
+                    <span style={{ fontSize: '20px' }}>📜</span>
                     <span>Historie</span>
                   </Link>
 
                   <Link
                     href="/rollen-historie"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-200 transition-all duration-200 hover:shadow-md"
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
                   >
-                    <span className="text-2xl">🎭</span>
+                    <span style={{ fontSize: '20px' }}>🎭</span>
                     <span>Rollen-Historie</span>
                   </Link>
 
                   <Link
                     href="/grafik"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-200 transition-all duration-200 hover:shadow-md"
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
                   >
-                    <span className="text-2xl">📊</span>
+                    <span style={{ fontSize: '20px' }}>📊</span>
                     <span>Grafik</span>
                   </Link>
 
                   <Link
                     href="/abrechnung"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-200 transition-all duration-200 hover:shadow-md"
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
                   >
-                    <span className="text-2xl">💰</span>
+                    <span style={{ fontSize: '20px' }}>💰</span>
                     <span>Abrechnung</span>
                   </Link>
 
                   <Link
                     href="/passwort-aendern"
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-200 transition-all duration-200 hover:shadow-md"
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#f8f9fa',
+                      color: '#333',
+                      textDecoration: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: '1px solid #dee2e6'
+                    }}
                   >
-                    <span className="text-2xl">🔑</span>
+                    <span style={{ fontSize: '20px' }}>🔑</span>
                     <span>Passwort ändern</span>
                   </Link>
 
                   {/* Divider */}
-                  <div className="h-px bg-gray-200 my-2" />
+                  <div style={{ height: '1px', backgroundColor: '#dee2e6', margin: '10px 0' }} />
 
                   {/* Admin-only items */}
                   {currentUser?.rolle === 'admin' && (
@@ -743,23 +833,47 @@ export default function Home() {
                       <Link
                         href="/admin"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-200 transition-all duration-200 hover:shadow-md"
+                        style={{
+                          padding: '15px',
+                          backgroundColor: '#f8f9fa',
+                          color: '#333',
+                          textDecoration: 'none',
+                          borderRadius: '5px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          border: '1px solid #dee2e6'
+                        }}
                       >
-                        <span className="text-2xl">👑</span>
+                        <span style={{ fontSize: '20px' }}>👑</span>
                         <span>Admin-Verwaltung</span>
                       </Link>
 
                       <Link
                         href="/users"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 text-gray-800 rounded-lg font-semibold border border-gray-200 transition-all duration-200 hover:shadow-md"
+                        style={{
+                          padding: '15px',
+                          backgroundColor: '#f8f9fa',
+                          color: '#333',
+                          textDecoration: 'none',
+                          borderRadius: '5px',
+                          fontSize: '16px',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          border: '1px solid #dee2e6'
+                        }}
                       >
-                        <span className="text-2xl">👥</span>
+                        <span style={{ fontSize: '20px' }}>👥</span>
                         <span>User-Verwaltung</span>
                       </Link>
 
                       {/* Divider */}
-                      <div className="h-px bg-gray-200 my-2" />
+                      <div style={{ height: '1px', backgroundColor: '#dee2e6', margin: '10px 0' }} />
                     </>
                   )}
 
@@ -769,59 +883,83 @@ export default function Home() {
                       setMenuOpen(false);
                       logout();
                     }}
-                    className="flex items-center gap-3 p-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
+                    style={{
+                      padding: '15px',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '5px',
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}
                   >
-                    <span className="text-2xl">🚪</span>
+                    <span style={{ fontSize: '20px' }}>🚪</span>
                     <span>Abmelden</span>
                   </button>
                 </div>
               </div>
             </>
           )}
+          <div style={{ textAlign: 'center', fontSize: '14px', color: '#666', marginBottom: '20px' }}>
+            {currentDate}
+          </div>
+          <div style={{ textAlign: 'center', fontSize: '12px', color: '#999', marginBottom: '20px' }}>
+            Normal Re/Kontra + Solo + Hochzeit + Bock
+          </div>
+
+          <button
+            onClick={handleNewGameDay}
+            style={{
+              display: 'block',
+              width: 'auto',
+              margin: '0 auto 25px auto',
+              padding: '10px 15px',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              fontSize: '16px',
+              cursor: 'pointer'
+          }}
+        >
+          Neuen Spieltag starten
+        </button>
 
         {!currentSpieltag ? (
-          <div className="text-center py-16 text-gray-500">
-            <p className="text-lg mb-2 font-semibold">Noch kein aktiver Spieltag</p>
-            <p className="text-sm">Klicke auf Neuen Spieltag starten um zu beginnen</p>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <p style={{ fontSize: '18px', marginBottom: '10px' }}>Noch kein aktiver Spieltag</p>
+            <p>Klicke auf Neuen Spieltag starten um zu beginnen</p>
           </div>
         ) : (
           <>
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-gray-200">
-                <h2 className="text-2xl font-bold text-blue-600">
-                  Spielerfassung
-                </h2>
-                <div className="flex items-center gap-4 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-                  <span className="font-semibold text-gray-700 text-sm">Anzahl:</span>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="playerCount" 
-                      checked={playerCount === 4} 
-                      onChange={() => handlePlayerCountChange(4)}
-                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-gray-700 font-medium">4</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="playerCount" 
-                      checked={playerCount === 5} 
-                      onChange={() => handlePlayerCountChange(5)}
-                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-gray-700 font-medium">5</span>
-                  </label>
-                </div>
-              </div>
+            <div style={{ marginBottom: '30px' }}>
+              <h2 style={{ color: '#0056b3', marginTop: '30px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                Spielerfassung
+              </h2>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold' }}>Anzahl der Spieler:</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <input type="radio" name="playerCount" checked={playerCount === 4} onChange={() => handlePlayerCountChange(4)} />
+                      4 Spieler
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <input type="radio" name="playerCount" checked={playerCount === 5} onChange={() => handlePlayerCountChange(5)} />
+                      5 Spieler
+                    </label>
+                  </div>
+                </div>
 
-                <div className={`grid grid-cols-1 ${playerCount === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-5'} gap-4`}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${playerCount}, 1fr)`, gap: '15px', marginBottom: '20px' }}>
                   {Array.from({ length: playerCount }, (_, i) => (
-                    <div key={i} className="bg-white border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors">
-                      <label className="block mb-2 font-semibold text-gray-700">Spieler {i + 1}:</label>
+                    <div key={i} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
+                      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Spieler {i + 1}:</label>
                       <input
                         type="text"
                         value={playerNames[i] || ''}
@@ -831,19 +969,19 @@ export default function Home() {
                           setPlayerNames(newNames);
                         }}
                         required
-                        placeholder={`Name von Spieler ${i + 1}`}
-                        className="w-full px-3 py-2 mb-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        style={{ width: '100%', padding: '8px', marginBottom: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
                       />
                       
-                      <div className="mt-3 space-y-2">
-                        <h4 className="text-sm font-semibold text-gray-600 mb-2">Rolle:</h4>
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <div style={{ marginTop: '10px' }}>
+                        <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>Rolle:</h4>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                           <input
                             type="radio"
                             name="geber"
                             checked={playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')}
                             onChange={() => {
                               const newRoles = [...playerRoles];
+                              // Alle anderen Geber entfernen
                               for (let j = 0; j < newRoles.length; j++) {
                                 if (j !== i && (newRoles[j] === 'geber' || newRoles[j]?.startsWith('geber+'))) {
                                   newRoles[j] = '';
@@ -852,12 +990,12 @@ export default function Home() {
                               newRoles[i] = 'geber';
                               setPlayerRoles(newRoles);
                             }}
-                            className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                            style={{ marginRight: '5px' }}
                           />
-                          <span className="text-gray-700">Geber</span>
+                          Geber
                         </label>
                         
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                           <input
                             type="checkbox"
                             checked={playerRoles[i] === 're' || playerRoles[i] === 'geber+re'}
@@ -872,15 +1010,12 @@ export default function Home() {
                               }
                               setPlayerRoles(newRoles);
                             }}
-                            className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                            style={{ marginRight: '5px' }}
                           />
-                          <span className="text-gray-700">
-                            Re {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && 
-                            <span className="text-xs text-gray-400">(Geber sitzt aus)</span>}
-                          </span>
+                          Re {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && <span style={{ fontSize: '11px', color: '#999' }}>(Geber sitzt aus)</span>}
                         </label>
                         
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                           <input
                             type="checkbox"
                             checked={playerRoles[i] === 'hochzeit' || playerRoles[i] === 'geber+hochzeit'}
@@ -895,15 +1030,12 @@ export default function Home() {
                               }
                               setPlayerRoles(newRoles);
                             }}
-                            className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                            style={{ marginRight: '5px' }}
                           />
-                          <span className="text-gray-700">
-                            Hochzeit {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && 
-                            <span className="text-xs text-gray-400">(Geber sitzt aus)</span>}
-                          </span>
+                          Hochzeit {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && <span style={{ fontSize: '11px', color: '#999' }}>(Geber sitzt aus)</span>}
                         </label>
                         
-                        <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '14px' }}>
                           <input
                             type="checkbox"
                             checked={playerRoles[i] === 'solo' || playerRoles[i] === 'geber+solo'}
@@ -918,114 +1050,88 @@ export default function Home() {
                               }
                               setPlayerRoles(newRoles);
                             }}
-                            className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                            style={{ marginRight: '5px' }}
                           />
-                          <span className="text-gray-700">
-                            Solo {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && 
-                            <span className="text-xs text-gray-400">(Geber sitzt aus)</span>}
-                          </span>
+                          Solo {playerCount === 5 && (playerRoles[i] === 'geber' || playerRoles[i]?.startsWith('geber+')) && <span style={{ fontSize: '11px', color: '#999' }}>(Geber sitzt aus)</span>}
                         </label>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Spielwert + Bockrunde in EINER Zeile */}
-                <div className="bg-white border-2 border-gray-200 rounded-xl p-4">
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
-                    {/* Spielwert */}
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-700 whitespace-nowrap">Spielwert:</span>
-                      <button
-                        type="button"
-                        onClick={() => setGameValue((gameValue || 0) + 10)}
-                        className="w-12 h-12 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition-all"
-                      >
-                        +10
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGameValue((gameValue || 0) + 5)}
-                        className="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition-all"
-                      >
-                        +5
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGameValue((gameValue || 0) + 1)}
-                        className="w-12 h-12 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white rounded-lg text-xl font-bold shadow-md hover:shadow-lg transition-all"
-                      >
-                        +
-                      </button>
-                      
-                      <div className="w-16 h-12 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg flex items-center justify-center">
-                        <div className="text-2xl font-bold text-blue-700">
-                          {gameValue !== null ? gameValue : '?'}
-                        </div>
-                      </div>
-                      
-                      <button
-                        type="button"
-                        onClick={() => setGameValue((gameValue || 0) - 1)}
-                        className="w-12 h-12 bg-gradient-to-r from-red-400 to-red-500 hover:from-red-500 hover:to-red-600 text-white rounded-lg text-xl font-bold shadow-md hover:shadow-lg transition-all"
-                      >
-                        −
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGameValue((gameValue || 0) - 5)}
-                        className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition-all"
-                      >
-                        −5
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGameValue((gameValue || 0) - 10)}
-                        className="w-12 h-12 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition-all"
-                      >
-                        −10
-                      </button>
-                    </div>
-
-                    {/* Bockrunde */}
-                    <div className="flex items-center gap-2 ml-auto">
-                      {bockActive > 0 && (
-                        <div className="px-2 py-1 bg-red-100 border border-red-300 rounded text-red-700 text-xs font-bold whitespace-nowrap">
-                          ⚠️ {bockPlayedInStreak + 1}/{bockTotalInStreak}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setBockTrigger(!bockTrigger)}
-                        className={`h-12 px-4 rounded-lg font-bold text-white transition-all duration-200 shadow-md hover:shadow-lg text-sm whitespace-nowrap ${
-                          bockTrigger 
-                            ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800' 
-                            : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
-                        }`}
-                      >
-                        {bockTrigger ? '✓ Bockrunde auslösen' : 'Bockrunde auslösen'} ({playerCount} Spiele)
-                      </button>
-                    </div>
+                <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
+                  <h3 style={{ fontSize: '16px', marginBottom: '10px' }}>Spielwert:</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                    {GAME_VALUES.map(val => (
+                      <label key={val} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <input
+                          type="radio"
+                          name="gameValue"
+                          value={val}
+                          checked={gameValue === val && !customGameValue}
+                          onChange={() => {
+                            setGameValue(val);
+                            setCustomGameValue('');
+                          }}
+                        />
+                        {val}
+                      </label>
+                    ))}
+                  </div>
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <input type="radio" name="gameValue" checked={!!customGameValue} onChange={() => {}} />
+                      Custom:
+                      <input
+                        type="number"
+                        value={customGameValue}
+                        onChange={(e) => {
+                          setCustomGameValue(e.target.value);
+                          setGameValue(parseInt(e.target.value) || 0);
+                        }}
+                        style={{ width: '80px', padding: '5px', border: '1px solid #ccc', borderRadius: '4px' }}
+                      />
+                    </label>
                   </div>
                 </div>
 
-                <div className="flex gap-3">
-                  <button 
-                    type="submit" 
-                    className={`flex-1 py-4 rounded-xl font-bold text-white text-lg transition-all duration-200 shadow-md hover:shadow-lg ${
-                      editingGameId 
-                        ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700' 
-                        : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800'
-                    }`}
-                  >
+                <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px', backgroundColor: '#fff9e6' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                      <h3 style={{ fontSize: '16px', margin: 0 }}>Bockrunde:</h3>
+                      {bockActive > 0 && (
+                        <div style={{ padding: '8px 12px', backgroundColor: '#ffe6e6', borderRadius: '4px', fontWeight: 'bold', color: '#d32f2f', fontSize: '14px' }}>
+                          ⚠️ Aktiv: {bockPlayedInStreak + 1}/{bockTotalInStreak} (noch {bockActive} Spiele)
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBockTrigger(!bockTrigger)}
+                      style={{
+                        padding: '12px 20px',
+                        backgroundColor: bockTrigger ? '#d32f2f' : '#ff9800',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '5px',
+                        fontSize: '15px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {bockTrigger ? '✓ Bockrunde wird ausgelöst' : 'Bockrunde auslösen'} ({playerCount} Spiele)
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" style={{ flex: 1, padding: '15px', backgroundColor: editingGameId ? '#ffc107' : '#28a745', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
                     {editingGameId ? 'Änderungen speichern' : 'Spielrunde erfassen'}
                   </button>
                   {editingGameId && (
-                    <button 
-                      type="button" 
-                      onClick={cancelEdit} 
-                      className="px-8 py-4 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl font-bold text-lg transition-all duration-200 shadow-md hover:shadow-lg"
-                    >
+                    <button type="button" onClick={cancelEdit} style={{ padding: '15px 30px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}>
                       Abbrechen
                     </button>
                   )}
@@ -1034,21 +1140,19 @@ export default function Home() {
             </div>
 
             {games.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-blue-600 mt-8 mb-6 pb-3 border-b-2 border-gray-200">
-                  Spielverlauf
-                </h2>
-                <div className="overflow-x-auto overflow-y-auto max-h-[600px] relative border-2 border-gray-200 rounded-xl shadow-lg">
-                  <table className="w-full border-collapse">
-                    <thead className="sticky top-0 z-10 bg-gradient-to-r from-gray-100 to-gray-200">
-                      <tr>
-                        <th className="border border-gray-300 px-2 py-3 text-left font-bold text-gray-700 w-12">#</th>
-                        <th className="border border-gray-300 px-2 py-3 text-left font-bold text-gray-700 w-20">Wert</th>
-                        <th className="border border-gray-300 px-2 py-3 text-center font-bold text-gray-700 w-16">Bock</th>
+              <div style={{ marginBottom: '30px' }}>
+                <h2 style={{ color: '#0056b3', marginTop: '30px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>Spielverlauf</h2>
+                <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '600px', position: 'relative', border: '1px solid #ddd', borderRadius: '5px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '0' }}>
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f0f0f0' }}>
+                      <tr style={{ backgroundColor: '#f0f0f0' }}>
+                        <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Spiel #</th>
+                        <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Spielwert</th>
+                        <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center' }}>Bock</th>
                         {playerNames.filter(n => n.trim()).map(name => (
-                          <th key={name} className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-700">{name}</th>
+                          <th key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center' }}>{name}</th>
                         ))}
-                        <th className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-700 w-16">⚙️</th>
+                        <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', width: '60px' }}>✍️</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1139,15 +1243,15 @@ export default function Home() {
                         }
                         
                         return (
-                          <tr key={game.gameId || `${game.gameNumber}-${gameIndex}`} className="hover:bg-blue-50 transition-colors">
-                            <td className="border border-gray-300 px-2 py-3 font-medium text-center">{game.gameNumber}</td>
-                            <td className="border border-gray-300 px-2 py-3 text-center">
+                          <tr key={game.gameId || `${game.gameNumber}-${gameIndex}`}>
+                            <td style={{ border: '1px solid #ddd', padding: '10px' }}>{game.gameNumber}</td>
+                            <td style={{ border: '1px solid #ddd', padding: '10px' }}>
                               {game.gameValue}
                               {game.hochzeitPhase === 'suche' && ' (H Suche)'}
                               {game.hochzeitPhase === 'mit_partner' && ' (H m.P.)'}
                               {game.hochzeitPhase === 'solo' && ' (H Solo)'}
                             </td>
-                            <td className={`border border-gray-300 px-2 py-3 text-center text-xs ${bockDisplay !== '-' ? 'font-bold text-red-700' : 'text-gray-500'}`}>
+                            <td style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', fontWeight: bockDisplay !== '-' ? 'bold' : 'normal', color: bockDisplay !== '-' ? '#d32f2f' : '#666' }}>
                               {bockDisplay}
                             </td>
                             {playerNames.filter(n => n.trim()).map(name => {
@@ -1157,32 +1261,32 @@ export default function Home() {
                               
                               // Rolle ermitteln (aus Referenz, Zeile 656-680)
                               let roleChar = '-';
-                              let bgColor = 'bg-white';
+                              let bgColor = '#fff';
                               const isGeber = roles.includes('geber') || roles.some(r => r.startsWith('geber+'));
                               
                               // Priorität: Solo > Re > Hochzeit > Kontra
                               if (roles.includes('solo') || roles.includes('geber+solo')) {
                                 roleChar = 'S';
-                                bgColor = 'bg-slate-100';
+                                bgColor = '#ffe6e6';
                               } else if (roles.includes('re') || roles.includes('geber+re')) {
                                 roleChar = 'R';
-                                bgColor = 'bg-blue-50';
+                                bgColor = '#e6f7ff';
                               } else if (roles.includes('hochzeit') || roles.includes('geber+hochzeit')) {
                                 roleChar = 'H';
-                                bgColor = 'bg-indigo-50';
+                                bgColor = '#fff0e6';
                               } else if (roles.includes('geber')) {
                                 // Bei 5 Spielern sitzt Geber aus (wenn Punkte = 0)
                                 if (playerCount === 5 && playerData.points === 0) {
                                   roleChar = '⌀';
-                                  bgColor = 'bg-gray-50';
+                                  bgColor = '#f8f9fa';
                                 } else {
                                   roleChar = 'G';
-                                  bgColor = 'bg-gray-100';
+                                  bgColor = '#fff0e6';
                                 }
                               } else if (playerData && playerData.points !== 0) {
                                 // Kontra (aktiver Spieler ohne spezielle Rolle)
                                 roleChar = 'K';
-                                bgColor = 'bg-gray-50';
+                                bgColor = '#fff0e6';
                               }
                               
                               // Im 4-Spieler-Modus: Geber-Indikator hinzufügen (wenn Geber eine andere Rolle hat)
@@ -1191,21 +1295,30 @@ export default function Home() {
                               }
                               
                               return (
-                                <td key={name} className={`border border-gray-300 px-4 py-3 text-center ${bgColor}`}>
-                                  <span className="font-normal mr-2">{roleChar}</span>
-                                  <span className={`font-bold ${cumulative >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <td key={name} style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'center', backgroundColor: bgColor }}>
+                                  <span style={{ fontWeight: 'normal', marginRight: '5px' }}>{roleChar}</span>
+                                  <span style={{ fontWeight: 'bold', color: cumulative >= 0 ? '#28a745' : '#dc3545' }}>
                                     {cumulative >= 0 ? '+' : ''}{cumulative}
                                   </span>
                                 </td>
                               );
                             })}
-                            <td className="border border-gray-300 px-2 py-3 text-center">
+                            <td style={{ border: '1px solid #ddd', padding: '5px', textAlign: 'center' }}>
                               <button
                                 onClick={() => startEditGame(game)}
-                                className="px-3 py-1 text-2xl text-gray-600 hover:text-blue-600 transition-colors"
+                                style={{
+                                  padding: '5px 10px',
+                                  fontSize: '16px',
+                                  backgroundColor: '#ffc107',
+                                  color: '#333',
+                                  border: 'none',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer',
+                                  transition: 'background-color 0.2s'
+                                }}
                                 title={`Spiel ${game.gameNumber} bearbeiten`}
                               >
-                                ⚙️
+                                ✍️
                               </button>
                             </td>
                           </tr>
@@ -1228,9 +1341,9 @@ export default function Home() {
                         const punktwert = currentSpieltag?.punktwert || 0.05;
                         
                         return (
-                          <tr className="bg-gradient-to-r from-slate-100 to-slate-200 border-t-4 border-slate-400 sticky bottom-0 z-[9]">
-                            <td colSpan={3} className="border border-gray-300 px-2 py-4 font-bold text-base text-slate-700 text-center">
-                              Zu zahlen
+                          <tr style={{ backgroundColor: '#fff3cd', borderTop: '3px solid #ffc107', position: 'sticky', bottom: 0, zIndex: 9 }}>
+                            <td colSpan={3} style={{ border: '1px solid #ddd', padding: '15px', fontWeight: 'bold', fontSize: '16px', color: '#856404', backgroundColor: '#fff3cd' }}>
+                              💶 Zu zahlen
                             </td>
                             {playerNames.filter(n => n.trim()).map(name => {
                               const points = finalPoints[name] || 0;
@@ -1239,14 +1352,14 @@ export default function Home() {
                                 : tageseinsatz + ((maxPoints - points) * punktwert);
                               
                               return (
-                                <td key={name} className="border border-gray-300 px-4 py-4 text-center font-bold text-lg text-blue-700">
+                                <td key={name} style={{ border: '1px solid #ddd', padding: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '18px', color: '#0056b3', backgroundColor: '#fff3cd' }}>
                                   {payment.toFixed(2)} €
                                 </td>
                               );
                             })}
-                            <td className="border border-gray-300 px-2 py-2 text-center bg-slate-300 min-w-[80px]">
-                              <div className="font-bold text-xs text-slate-700 mb-1">Gesamt</div>
-                              <div className="font-bold text-base text-blue-700 whitespace-nowrap">
+                            <td style={{ border: '1px solid #ddd', padding: '15px', textAlign: 'center', backgroundColor: '#ffc107' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#856404', marginBottom: '3px' }}>Gesamt</div>
+                              <div style={{ fontWeight: 'bold', fontSize: '20px', color: '#0056b3' }}>
                                 {Object.values(finalPoints).reduce((sum, points) => {
                                   const payment = points === maxPoints 
                                     ? tageseinsatz 

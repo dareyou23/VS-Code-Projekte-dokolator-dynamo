@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -18,32 +17,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      console.log('=== LOGIN START ===');
-      console.log('Email:', email);
-      console.log('apiClient:', apiClient);
       const response = await apiClient.login(email, password);
-      console.log('=== LOGIN RESPONSE ===', response);
       
       if (response.success && response.data) {
         const { user } = response.data;
         
-        // Check if password change is required
         if (user.passwordChangeRequired) {
           router.push('/passwort-aendern');
           return;
         }
         
-        // Redirect based on role
-        if (user.rolle === 'admin') {
-          router.push('/admin');
-        } else {
-          router.push('/');
-        }
+        router.push('/');
       } else {
         setError(response.error || 'Login fehlgeschlagen');
       }
     } catch (err) {
-      console.error('=== LOGIN ERROR ===', err);
+      console.error('Login error:', err);
       setError('Verbindungsfehler. Bitte versuche es später erneut.');
     } finally {
       setLoading(false);
@@ -51,74 +40,93 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f4f4' }}>
-      <div style={{ backgroundColor: '#fff', padding: '40px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', maxWidth: '500px', width: '100%', position: 'relative', overflow: 'visible' }}>
-        <div style={{ textAlign: 'center', marginBottom: '-10px' }}>
-          <h1 style={{ color: '#0056b3', margin: 0, fontSize: '36px', fontWeight: 'bold' }}>Dokolator Login</h1>
-        </div>
-        
-        <div style={{ position: 'relative', marginBottom: '-180px', marginTop: '10px' }}>
-          <img 
-            src="/Doko-Runde.png" 
-            alt="Doko-Runde" 
-            style={{ 
-              width: '100%',
-              maxWidth: '500px',
-              height: 'auto', 
-              display: 'block',
-              margin: '0 auto',
-              position: 'relative',
-              zIndex: 1
-            }} 
-          />
-        </div>
-        
-        <form onSubmit={handleSubmit} style={{ position: 'relative', zIndex: 2, paddingTop: '200px' }}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>E-Mail:</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '16px', backgroundColor: '#fff' }}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo & Title Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          <div className="flex flex-col items-center mb-6">
+            <img 
+              src="/Doko-Runde.png" 
+              alt="Doko-Runde" 
+              className="w-full max-w-xs mb-4 drop-shadow-lg"
             />
+            <h1 className="text-3xl font-bold text-blue-600 mb-2">
+              Dokolator V3 Beta
+            </h1>
+            <p className="text-gray-500 text-sm">
+              Doppelkopf Statistiken & Abrechnung
+            </p>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Passwort:</label>
-            <div style={{ position: 'relative' }}>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px', paddingRight: '40px', border: '1px solid #ccc', borderRadius: '4px', fontSize: '16px', backgroundColor: '#fff' }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
-              >
-                {showPassword ? '🙈' : '👁️'}
-              </button>
-            </div>
-          </div>
-
+          {/* Error Message */}
           {error && (
-            <div style={{ marginBottom: '20px', padding: '10px', backgroundColor: '#ffe6e6', color: '#d32f2f', borderRadius: '4px', fontSize: '14px' }}>
-              {error}
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm font-medium">{error}</p>
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{ width: '100%', padding: '12px', backgroundColor: loading ? '#ccc' : '#0056b3', color: 'white', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer' }}
-          >
-            {loading ? 'Anmelden...' : 'Anmelden'}
-          </button>
-        </form>
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label 
+                htmlFor="email" 
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                E-Mail
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                placeholder="deine@email.de"
+              />
+            </div>
+
+            <div>
+              <label 
+                htmlFor="password" 
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Passwort
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Anmelden...
+                </span>
+              ) : (
+                'Anmelden'
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center text-sm text-gray-500">
+          <p>© 2026 Dokolator - Doppelkopf Statistiken</p>
+        </div>
       </div>
     </div>
   );
