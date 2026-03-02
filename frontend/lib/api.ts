@@ -258,6 +258,13 @@ export class ApiClient {
     });
   }
 
+  async adminResetPassword(userId: string, newPassword: string) {
+    return this.request('/auth/admin-reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ userId, newPassword }),
+    });
+  }
+
   async resetPassword(email: string) {
     return this.request('/auth/reset-password', {
       method: 'POST',

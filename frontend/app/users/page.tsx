@@ -23,6 +23,9 @@ export default function UsersPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editEmail, setEditEmail] = useState('');
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const { logout } = useAuth();
 
@@ -111,6 +114,40 @@ export default function UsersPage() {
   const handleCancelEdit = () => {
     setEditingUserId(null);
     setEditEmail('');
+    setError('');
+  };
+
+  const handleResetPassword = (userId: string) => {
+    setResetPasswordUserId(userId);
+    setResetPassword('');
+    setShowPassword(false);
+    setError('');
+    setSuccess('');
+  };
+
+  const handleSavePassword = async (userId: string, email: string) => {
+    if (!resetPassword || resetPassword.length < 8) {
+      setError('Passwort muss mindestens 8 Zeichen lang sein');
+      return;
+    }
+
+    try {
+      const response = await api.adminResetPassword(userId, resetPassword);
+      if (response.success) {
+        setSuccess(`Passwort für ${email} erfolgreich geändert. User muss beim nächsten Login das Passwort ändern.`);
+        setResetPasswordUserId(null);
+        setResetPassword('');
+      } else {
+        setError(response.error || 'Fehler beim Ändern des Passworts');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Fehler beim Ändern des Passworts');
+    }
+  };
+
+  const handleCancelPasswordReset = () => {
+    setResetPasswordUserId(null);
+    setResetPassword('');
     setError('');
   };
 
@@ -232,13 +269,53 @@ export default function UsersPage() {
                       {new Date(user.createdAt).toLocaleDateString('de-DE')}
                     </td>
                     <td style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>
-                      {editingUserId === user.id ? null : (
-                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                      {editingUserId === user.id ? null : resetPasswordUserId === user.id ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'stretch' }}>
+                          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                            <input
+                              type={showPassword ? 'text' : 'password'}
+                              value={resetPassword}
+                              onChange={(e) => setResetPassword(e.target.value)}
+                              placeholder="Neues Passwort (min. 8 Zeichen)"
+                              style={{ flex: 1, padding: '6px', border: '1px solid #ccc', borderRadius: '3px', fontSize: '12px' }}
+                              autoFocus
+                            />
+                            <button
+                              onClick={() => setShowPassword(!showPassword)}
+                              style={{ padding: '6px 10px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '12px' }}
+                              title={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                            >
+                              {showPassword ? '🙈' : '👁️'}
+                            </button>
+                          </div>
+                          <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => handleSavePassword(user.id, user.email)}
+                              style={{ padding: '6px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✓ Speichern
+                            </button>
+                            <button
+                              onClick={handleCancelPasswordReset}
+                              style={{ padding: '6px 12px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '12px' }}
+                            >
+                              ✗ Abbrechen
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
                           <button
                             onClick={() => handleEditEmail(user.id, user.email)}
                             style={{ padding: '6px 12px', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '12px' }}
                           >
                             E-Mail ändern
+                          </button>
+                          <button
+                            onClick={() => handleResetPassword(user.id)}
+                            style={{ padding: '6px 12px', backgroundColor: '#ffc107', color: '#000', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                          >
+                            🔑 Passwort ändern
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id, user.email)}

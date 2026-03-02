@@ -182,6 +182,12 @@ Resources:
             RestApiId: !Ref DokolatorApi
             Path: /auth/change-password
             Method: post
+        AdminResetPassword:
+          Type: Api
+          Properties:
+            RestApiId: !Ref DokolatorApi
+            Path: /auth/admin-reset-password
+            Method: post
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
