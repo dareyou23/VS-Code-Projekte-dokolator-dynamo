@@ -5,7 +5,7 @@ Description: Dokolator DynamoDB Backend mit JWT Authentication
 Globals:
   Function:
     Timeout: 10
-    Runtime: nodejs20.x
+    Runtime: nodejs22.x
     MemorySize: 128
     Environment:
       Variables:
@@ -21,8 +21,13 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
-        AllowOrigin: "'*'"
+        AllowOrigin: "'https://vs-code-projekte-dokolator-dynamo.vercel.app'"
         MaxAge: "'600'"
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 10
+          ThrottlingBurstLimit: 20
 
   # DynamoDB Tabelle (Single Table Design)
   GamesTable:
